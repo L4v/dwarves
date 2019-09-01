@@ -35,18 +35,20 @@ bool HandleEvent(SDL_Event* Event)
     {
       // NOTE(l4v): In case of quitting the window
     case SDL_QUIT:
-      ShouldQuit = true;
-      break;
+      {
+	ShouldQuit = true;
+      }break;
 
     case SDL_WINDOWEVENT:
-      switch(Event->window.event)
-	{
-	  // NOTE(l4v): In case the window is resized
-	case SDL_WINDOWEVENT_RESIZED:
-	  
-	  break;
-	}
-      break;
+      {
+	switch(Event->window.event)
+	  {
+	    // NOTE(l4v): In case the window is resized
+	  case SDL_WINDOWEVENT_RESIZED:
+	    {
+	    }break;
+	  }
+      }break;
     }
   
   return ShouldQuit;
