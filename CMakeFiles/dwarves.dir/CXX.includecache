@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/jigsaw/workspace/cpp/games/dwarves/dwarves_sdl.cpp
+iostream
+-
+SDL2/SDL.h
+/home/jigsaw/workspace/cpp/games/dwarves/SDL2/SDL.h
+GL/gl.h
+-
+
