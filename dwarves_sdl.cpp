@@ -32,6 +32,16 @@ typedef double real64;
 SDL_GameController* ControllerHandles[MAX_CONTROLLERS];
 SDL_Haptic* RumbleHandles[MAX_CONTROLLERS];
 
+struct sdl_audio_ring_buffer
+{
+  int32 Size;
+  int32 WriteCursor;
+  int32 PlayCursor;
+  void* Data;
+};
+
+global_variable sdl_audio_ring_buffer AudioRingBuffer;
+
 internal bool
 HandleEvent(SDL_Event* Event)
 {
@@ -155,8 +165,22 @@ SDLOpenGameControllers()
 internal void
 SDLAudioCallback(void* UserData, uint8* AudioData, int32 Length)
 {
-  // NOTE(l4v): Clear audio buffer
-  memset(AudioData, 0, Length);
+  sdl_audio_ring_buffer* RingBuffer = (sdl_audio_ring_buffer*)UserData;
+
+  int32 Region1Size = Length;
+  int32 Region2Size = 0;
+
+  if(RingBuffer->PlayCursor + Length > RingBuffer->Size)
+    {
+      Region1Size = RingBuffer->Size - RingBuffer->PlayCursor;
+      Region2Size = Length - Region1Size;
+    }
+
+  memcpy(AudioData, (uint8*)(RingBuffer->Data) + RingBuffer->PlayCursor, Region1Size);
+  memcpy(&AudioData[Region1Size], (uint8*)(RingBuffer->Data), Region2Size);
+  RingBuffer->PlayCursor = (RingBuffer->PlayCursor + Length) % RingBuffer->Size;
+  // NOTE(l4v): 2048 is the size of the SDL buffer in bytes
+  RingBuffer->WriteCursor = (RingBuffer->PlayCursor + 2048) % RingBuffer->Size;
 }
 
 internal void
@@ -169,12 +193,19 @@ SDLInitAudio(int32 SamplesPerSec, int32 BufferSize)
   AudioSettings.channels = 2;
   AudioSettings.samples = BufferSize / 2;
   AudioSettings.callback = &SDLAudioCallback;
+  AudioSettings.userdata = &AudioRingBuffer;
+  
+  AudioRingBuffer.Size = BufferSize;
+  AudioRingBuffer.Data = malloc(BufferSize);
+  AudioRingBuffer.PlayCursor = AudioRingBuffer.WriteCursor = 0;
+  
 
   SDL_OpenAudio(&AudioSettings, 0);
 
   if(AudioSettings.format != AUDIO_S16LSB)
     {
       std::cout<<"ERROR::AUDIO:DID_NOT_GET_AUDIO_S16LE_BUFFER" << std::endl;
+      SDL_CloseAudio();
     }
 }
 
@@ -232,12 +263,14 @@ int main(void)
   int32 SquareWavePeriod = SamplesPerSec / ToneHz;
   int32 HalfSquareWavePeriod = SquareWavePeriod * 0.5f;
   int32 BytesPerSample = sizeof(int16) * 2;
-  int32 BytesToWrite = 800 * BytesPerSample;
 
+  int32 TargetQueueBytes = 48000 * BytesPerSample;
+  int32 BytesToWrite = TargetQueueBytes - SDL_GetQueuedAudioSize(1);
+  
   void* SoundBuffer = malloc(BytesToWrite);
   int16 *SampleOut = (int16*)SoundBuffer;
   int32 SampleCount = BytesToWrite / BytesPerSample;
-
+  
   // NOTE(l4v): Audio test
   for(int32 SampleIndex = 0;
       SampleIndex < SampleCount;
