@@ -167,7 +167,7 @@ SDLInitAudio(int32 SamplesPerSec, int32 BufferSize)
   AudioSettings.freq = SamplesPerSec;
   AudioSettings.format = AUDIO_S16LSB;
   AudioSettings.channels = 2;
-  AudioSettings.samples = BufferSize;
+  AudioSettings.samples = BufferSize / 2;
   AudioSettings.callback = &SDLAudioCallback;
 
   SDL_OpenAudio(&AudioSettings, 0);
@@ -176,9 +176,6 @@ SDLInitAudio(int32 SamplesPerSec, int32 BufferSize)
     {
       std::cout<<"ERROR::AUDIO:DID_NOT_GET_AUDIO_S16LE_BUFFER" << std::endl;
     }
-
-  // NOTE(l4v): Plays the audio
-  SDL_PauseAudio(0);
 }
 
 int main(void)
@@ -227,6 +224,35 @@ int main(void)
   // NOTE(l4v): Init SDL controllers
   SDLOpenGameControllers();
 
+  // NOTE(l4v): Testing audio
+  int32 SamplesPerSec = 48000;
+  int32 ToneHz = 256;
+  int16 ToneVolume = 3000;
+  uint32 RunningSampleIndex = 0;
+  int32 SquareWavePeriod = SamplesPerSec / ToneHz;
+  int32 HalfSquareWavePeriod = SquareWavePeriod * 0.5f;
+  int32 BytesPerSample = sizeof(int16) * 2;
+  int32 BytesToWrite = 800 * BytesPerSample;
+
+  void* SoundBuffer = malloc(BytesToWrite);
+  int16 *SampleOut = (int16*)SoundBuffer;
+  int32 SampleCount = BytesToWrite / BytesPerSample;
+
+  // NOTE(l4v): Audio test
+  for(int32 SampleIndex = 0;
+      SampleIndex < SampleCount;
+      ++SampleIndex)
+    {
+      int16 SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod)% 2)
+	? ToneVolume : -ToneVolume;
+      *SampleOut++ = SampleValue;
+      *SampleOut++ = SampleValue;
+	
+    }  
+  
+  SDLInitAudio(SamplesPerSec, BytesToWrite);
+  bool IsSoundPlaying = false;
+  
   // NOTE(l4v): Setup the viewport
   SDL_DisplayMode DisplayMode;
   SDL_GetCurrentDisplayMode(0, &DisplayMode);
@@ -280,6 +306,15 @@ int main(void)
 	      // TODO(l4v): This controller is note plugged in.
 	    }
 	}
+
+      SDL_QueueAudio(1, SoundBuffer, BytesToWrite);
+      
+      if(!IsSoundPlaying)
+	{
+	  SDL_PauseAudio(0);
+	  IsSoundPlaying = true;
+	}
+      
       glClearColor(0.8f, 0.0f, 0.8f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
