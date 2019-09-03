@@ -1,4 +1,5 @@
 #include <iostream>
+#include <math.h>
 
 #include "SDL2/SDL.h"
 #include <GL/gl.h>
@@ -12,6 +13,7 @@
 #define Gibibytes(Value) (Mebibytes(Value)*1024LL)
 
 #define MAX_CONTROLLERS 4
+#define Pi32 3.14159265359f
 
 typedef int8_t int8;
 typedef int16_t int16;
@@ -41,6 +43,58 @@ struct sdl_audio_ring_buffer
 };
 
 global_variable sdl_audio_ring_buffer AudioRingBuffer;
+
+struct sdl_sound_output
+{
+  int32 SamplesPerSec;
+  int32 ToneHz;
+  int16 ToneVolume;
+  uint32 RunningSampleIndex;
+  int32 WavePeriod;
+  int32 BytesPerSample;
+  int32 SecondaryBufferSize;
+};
+
+void
+SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock, int32 BytesToWrite)
+{
+  void* Region1 = (uint8*) AudioRingBuffer.Data + ByteToLock;
+  int32 Region1Size = BytesToWrite;
+  if(Region1Size + ByteToLock > SoundOutput->SecondaryBufferSize)
+    {
+      Region1Size = SoundOutput->SecondaryBufferSize - ByteToLock;
+    }
+  void* Region2 = (uint8*) AudioRingBuffer.Data;
+  int32 Region2Size = BytesToWrite - Region1Size;
+  int32 Region1SampleCount = Region1Size / SoundOutput->BytesPerSample;
+  int16* SampleOut = (int16*) Region1;
+
+  // NOTE(l4v): Audio test
+  for(int32 SampleIndex = 0;
+      SampleIndex < Region1SampleCount;
+      ++SampleIndex)
+    {
+      real32 t = 2.0f * Pi32 *(real32)SoundOutput->RunningSampleIndex++ / (real32)SoundOutput->WavePeriod;
+      real32 SineValue = sinf(t);
+      int16 SampleValue = (int16)(SineValue * SoundOutput->ToneVolume);
+      *SampleOut++ = SampleValue;
+      *SampleOut++ = SampleValue;
+    }
+  // TODO(l4v): Collapse the for loops
+      
+  int32 Region2SampleCount = Region2Size / SoundOutput->BytesPerSample;
+  SampleOut = (int16*) Region2;
+  for(int32 SampleIndex = 0;
+      SampleIndex < Region2SampleCount;
+      ++SampleIndex)
+    {
+      real32 t = 2.0f * Pi32 *(real32)SoundOutput->RunningSampleIndex++ / (real32)SoundOutput->WavePeriod;
+      real32 SineValue = sinf(t);
+      int16 SampleValue = (int16)(SineValue * SoundOutput->ToneVolume);
+      *SampleOut++ = SampleValue;
+      *SampleOut++ = SampleValue;
+    }
+}
 
 internal bool
 HandleEvent(SDL_Event* Event)
@@ -121,7 +175,7 @@ HandleEvent(SDL_Event* Event)
 	      }
 	    else if(Keycode == SDLK_ESCAPE)
 	      {
-		
+		ShouldQuit = true;
 	      }
 	    else if(Keycode == SDLK_SPACE)
 	      {
@@ -256,17 +310,20 @@ int main(void)
   SDLOpenGameControllers();
 
   // NOTE(l4v): Testing audio
-  int32 SamplesPerSec = 48000;
-  int32 ToneHz = 256;
-  int16 ToneVolume = 3000;
-  uint32 RunningSampleIndex = 0;
-  int32 SquareWavePeriod = SamplesPerSec / ToneHz;
-  int32 HalfSquareWavePeriod = SquareWavePeriod * 0.5f;
-  int32 BytesPerSample = sizeof(int16) * 2;
-  int32 SecondaryBufferSize = SamplesPerSec * BytesPerSample;
+  sdl_sound_output SoundOutput = {};
+    
+  SoundOutput.SamplesPerSec = 48000;
+  SoundOutput.ToneHz = 256;
+  SoundOutput.ToneVolume = 3000;
+  SoundOutput.RunningSampleIndex = 0;
+  SoundOutput.WavePeriod = SoundOutput.SamplesPerSec / SoundOutput.ToneHz;
+  // int32 HalfWavePeriod = WavePeriod * 0.5f;
+  SoundOutput.BytesPerSample = sizeof(int16) * 2;
+  SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSec * SoundOutput.BytesPerSample;
   
-  SDLInitAudio(SamplesPerSec, SecondaryBufferSize);
-  bool IsSoundPlaying = false;
+  SDLInitAudio(SoundOutput.SamplesPerSec, SoundOutput.SecondaryBufferSize);
+  SDLFillSoundBuffer(&SoundOutput, 0, SoundOutput.SecondaryBufferSize);  
+  SDL_PauseAudio(0);
   
   // NOTE(l4v): Setup the viewport
   SDL_DisplayMode DisplayMode;
@@ -321,64 +378,25 @@ int main(void)
 	      // TODO(l4v): This controller is note plugged in.
 	    }
 	}
-
+      
       SDL_LockAudio();
-      int32 BytesToLock = RunningSampleIndex * BytesPerSample % SecondaryBufferSize;
-      int32 BytesToWrite;
-      if(BytesToLock == AudioRingBuffer.PlayCursor)
+      int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) % SoundOutput.SecondaryBufferSize;
+      int32 BytesToWrite = 0;
+      if(ByteToLock == AudioRingBuffer.PlayCursor)
 	{
-	  BytesToWrite = SecondaryBufferSize;
+	  BytesToWrite = 0;
 	}
-      else if(BytesToLock  > AudioRingBuffer.PlayCursor)
+      else if(ByteToLock  > AudioRingBuffer.PlayCursor)
 	{
-	  BytesToWrite = (SecondaryBufferSize - BytesToLock);
+	  BytesToWrite = (SoundOutput.SecondaryBufferSize - ByteToLock);
 	  BytesToWrite += AudioRingBuffer.PlayCursor;
 	}
       else
 	{
-	  BytesToWrite = AudioRingBuffer.PlayCursor - BytesToLock;
+	  BytesToWrite = AudioRingBuffer.PlayCursor - ByteToLock;
 	}
-
-      void* Region1 = (uint8*) AudioRingBuffer.Data + BytesToLock;
-      int32 Region1Size = BytesToWrite;
-      if(Region1Size + BytesToLock > SecondaryBufferSize)
-	{
-	  Region1Size = SecondaryBufferSize - BytesToLock;
-	}
-      void* Region2 = (uint8*) AudioRingBuffer.Data;
-      int32 Region2Size = BytesToWrite - Region1Size;
       SDL_UnlockAudio();
-      int32 Region1SampleCount = Region1Size / BytesPerSample;
-      int16* SampleOut = (int16*) Region1;
-
-      // NOTE(l4v): Audio test
-      for(int32 SampleIndex = 0;
-	  SampleIndex < Region1SampleCount;
-	  ++SampleIndex)
-	{
-	  int16 SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod)% 2)
-	    ? ToneVolume : -ToneVolume;
-	  *SampleOut++ = SampleValue;
-	  *SampleOut++ = SampleValue;
-	}  
-      
-      if(!IsSoundPlaying)
-	{
-	  SDL_PauseAudio(0);
-	  IsSoundPlaying = true;
-	}
-
-      int32 Region2SampleCount = Region2Size / BytesPerSample;
-      SampleOut = (int16*) Region2;
-      for(int32 SampleIndex = 0;
-	  SampleIndex < Region2SampleCount;
-	  ++SampleIndex)
-	{
-	  int16 SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod)% 2)
-	    ? ToneVolume : -ToneVolume;
-	  *SampleOut++ = SampleValue;
-	  *SampleOut++ = SampleValue;
-	}
+      SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite);
       
       glClearColor(0.8f, 0.0f, 0.8f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

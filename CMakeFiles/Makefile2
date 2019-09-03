@@ -44,10 +44,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/hk-47/workspace/op/cpp/games/dwarves
+CMAKE_SOURCE_DIR = /home/jigsaw/workspace/cpp/games/dwarves
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/hk-47/workspace/op/cpp/games/dwarves
+CMAKE_BINARY_DIR = /home/jigsaw/workspace/cpp/games/dwarves
 
 #=============================================================================
 # Directory level rules for the build root directory
@@ -74,14 +74,14 @@ preinstall:
 CMakeFiles/dwarves.dir/all:
 	$(MAKE) -f CMakeFiles/dwarves.dir/build.make CMakeFiles/dwarves.dir/depend
 	$(MAKE) -f CMakeFiles/dwarves.dir/build.make CMakeFiles/dwarves.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hk-47/workspace/op/cpp/games/dwarves/CMakeFiles --progress-num=1,2 "Built target dwarves"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/jigsaw/workspace/cpp/games/dwarves/CMakeFiles --progress-num=1,2 "Built target dwarves"
 .PHONY : CMakeFiles/dwarves.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/dwarves.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hk-47/workspace/op/cpp/games/dwarves/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jigsaw/workspace/cpp/games/dwarves/CMakeFiles 2
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/dwarves.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hk-47/workspace/op/cpp/games/dwarves/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jigsaw/workspace/cpp/games/dwarves/CMakeFiles 0
 .PHONY : CMakeFiles/dwarves.dir/rule
 
 # Convenience name for target.

@@ -6,11 +6,13 @@
 
 #IncludeRegexTransform: 
 
-/home/hk-47/workspace/op/cpp/games/dwarves/dwarves_sdl.cpp
+/home/jigsaw/workspace/cpp/games/dwarves/dwarves_sdl.cpp
 iostream
 -
+math.h
+-
 SDL2/SDL.h
-/home/hk-47/workspace/op/cpp/games/dwarves/SDL2/SDL.h
+/home/jigsaw/workspace/cpp/games/dwarves/SDL2/SDL.h
 GL/gl.h
 -
 
