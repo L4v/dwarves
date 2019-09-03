@@ -13,6 +13,12 @@ dwarves.h
 /home/hk-47/workspace/op/cpp/games/dwarves/dwarves.h
 
 /home/hk-47/workspace/op/cpp/games/dwarves/dwarves_sdl.cpp
+stdint.h
+-
+dwarves.h
+/home/hk-47/workspace/op/cpp/games/dwarves/dwarves.h
+dwarves.cpp
+/home/hk-47/workspace/op/cpp/games/dwarves/dwarves.cpp
 iostream
 -
 math.h
@@ -23,6 +29,4 @@ GL/gl.h
 -
 x86intrin.h
 -
-dwarves.cpp
-/home/hk-47/workspace/op/cpp/games/dwarves/dwarves.cpp
 

@@ -15,13 +15,8 @@
   - GetKeyboardLayout (for french, international WASD)
   ...
  */
-
-#include <iostream>
-// TODO(l4v): Implement own functions
-#include <math.h>
-#include "SDL2/SDL.h"
-#include <GL/gl.h>
-#include <x86intrin.h>
+#include <stdint.h>
+#include <cstddef>
 
 #define internal static
 #define global_variable static
@@ -50,7 +45,14 @@ typedef size_t memory_index;
 typedef float real32;
 typedef double real64;
 
+#include "dwarves.h"
 #include "dwarves.cpp"
+
+// TODO(l4v): Implement own functions
+#include <math.h>
+#include "SDL2/SDL.h"
+#include <GL/gl.h>
+#include <x86intrin.h>
 
 SDL_GameController* ControllerHandles[MAX_CONTROLLERS];
 SDL_Haptic* RumbleHandles[MAX_CONTROLLERS];
@@ -279,7 +281,7 @@ SDLInitAudio(int32 SamplesPerSec, int32 BufferSize)
 
   if(AudioSettings.format != AUDIO_S16LSB)
     {
-      std::cout<<"ERROR::AUDIO:DID_NOT_GET_AUDIO_S16LE_BUFFER" << std::endl;
+
       SDL_CloseAudio();
     }
 }
@@ -300,7 +302,7 @@ int main(void)
 	      | SDL_INIT_HAPTIC
 	      | SDL_INIT_AUDIO) > 0)
     {
-      std::cout << "ERROR::SDL:COULD_NOT_INIT_SDL" << std::endl;
+
       return 1;
     }
   
@@ -315,7 +317,7 @@ int main(void)
 
   if(!Window)
     {
-      std::cout << "ERROR::SDL:COULD_NOT_CREATE_WINDOW" << std::endl;
+
       return 1;
     }
 
@@ -323,7 +325,7 @@ int main(void)
 
   if(!GLContext)
     {
-      std::cout << "ERROR::SDL:COULD_NOT_CREATE_GL_CONTEXT" << std::endl;
+
       return 1;
     }
 
@@ -440,12 +442,6 @@ int main(void)
       // NOTE(l4v): Mega cycles per frame
       uint32 MCPF = (uint32)CyclesElapsed / 1000000;
 
-#if 0
-      system("clear");
-      std::cout << MSPerFrame << "ms/f " << FPS << "f/s " << MCPF
-		<< "Mc/f" << std::endl;
-      std::cout << "Estimate CPU clock: " << FPS * MCPF << std::endl;
-#endif
       LastCounter = EndCounter;
       LastCycleCount = EndCycleCount;
     }
