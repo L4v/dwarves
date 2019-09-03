@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/jigsaw/workspace/cpp/games/dwarves
+CMAKE_SOURCE_DIR = /home/hk-47/workspace/op/cpp/games/dwarves
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/jigsaw/workspace/cpp/games/dwarves
+CMAKE_BINARY_DIR = /home/hk-47/workspace/op/cpp/games/dwarves
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -80,9 +80,9 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jigsaw/workspace/cpp/games/dwarves/CMakeFiles /home/jigsaw/workspace/cpp/games/dwarves/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hk-47/workspace/op/cpp/games/dwarves/CMakeFiles /home/hk-47/workspace/op/cpp/games/dwarves/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jigsaw/workspace/cpp/games/dwarves/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hk-47/workspace/op/cpp/games/dwarves/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -123,6 +123,33 @@ dwarves/fast:
 	$(MAKE) -f CMakeFiles/dwarves.dir/build.make CMakeFiles/dwarves.dir/build
 .PHONY : dwarves/fast
 
+dwarves.o: dwarves.cpp.o
+
+.PHONY : dwarves.o
+
+# target to build an object file
+dwarves.cpp.o:
+	$(MAKE) -f CMakeFiles/dwarves.dir/build.make CMakeFiles/dwarves.dir/dwarves.cpp.o
+.PHONY : dwarves.cpp.o
+
+dwarves.i: dwarves.cpp.i
+
+.PHONY : dwarves.i
+
+# target to preprocess a source file
+dwarves.cpp.i:
+	$(MAKE) -f CMakeFiles/dwarves.dir/build.make CMakeFiles/dwarves.dir/dwarves.cpp.i
+.PHONY : dwarves.cpp.i
+
+dwarves.s: dwarves.cpp.s
+
+.PHONY : dwarves.s
+
+# target to generate assembly for a file
+dwarves.cpp.s:
+	$(MAKE) -f CMakeFiles/dwarves.dir/build.make CMakeFiles/dwarves.dir/dwarves.cpp.s
+.PHONY : dwarves.cpp.s
+
 dwarves_sdl.o: dwarves_sdl.cpp.o
 
 .PHONY : dwarves_sdl.o
@@ -159,6 +186,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... dwarves"
 	@echo "... edit_cache"
+	@echo "... dwarves.o"
+	@echo "... dwarves.i"
+	@echo "... dwarves.s"
 	@echo "... dwarves_sdl.o"
 	@echo "... dwarves_sdl.i"
 	@echo "... dwarves_sdl.s"

@@ -1,8 +1,27 @@
-#include <iostream>
-#include <math.h>
+/*
+  TODO(l4v): NOT THE FINAL PLATFORM LAYER!
 
+  - Saved game locations
+  - Getting a handle to our own exec file
+  - Asset loading path
+  - Threading (launch a thread)
+  - Raw input (support multiple keyboards)
+  - Sleep / timeBeginPeriod
+  - ClipCursor() (for multimonitor support)
+  - Fullscreen support
+  - Control cursor visibility
+  - QueryCancelAutoplay
+  - Active app
+  - GetKeyboardLayout (for french, international WASD)
+  ...
+ */
+
+#include <iostream>
+// TODO(l4v): Implement own functions
+#include <math.h>
 #include "SDL2/SDL.h"
 #include <GL/gl.h>
+#include <x86intrin.h>
 
 #define internal static
 #define global_variable static
@@ -30,6 +49,8 @@ typedef size_t memory_index;
 
 typedef float real32;
 typedef double real64;
+
+#include "dwarves.cpp"
 
 SDL_GameController* ControllerHandles[MAX_CONTROLLERS];
 SDL_Haptic* RumbleHandles[MAX_CONTROLLERS];
@@ -340,9 +361,13 @@ int main(void)
   // NOTE(l4v): Enable z-buffer
   glEnable(GL_DEPTH_TEST);
 
+  uint64 LastCounter = SDL_GetPerformanceCounter();
+  uint64 LastCycleCount = _rdtsc();
+  uint64 PerfCountFrequency = SDL_GetPerformanceFrequency();
   // NOTE(l4v): Main loop
   while(1)
     {
+      
       SDL_Event Event;
       SDL_WaitEvent(&Event);
       if(HandleEvent(&Event))
@@ -378,6 +403,8 @@ int main(void)
 	      // TODO(l4v): This controller is note plugged in.
 	    }
 	}
+
+      GameUpdateAndRender();
       
       SDL_LockAudio();
       int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) % SoundOutput.SecondaryBufferSize;
@@ -402,6 +429,25 @@ int main(void)
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       SDL_GL_SwapWindow(Window);
+
+      uint64 EndCycleCount = _rdtsc();
+      uint64 EndCounter = SDL_GetPerformanceCounter();
+      uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
+      uint64 CounterElapsed = EndCounter - LastCounter;
+      // NOTE(l4v): Milliseconds per frame
+      uint64 MSPerFrame = ((1000 * CounterElapsed) / PerfCountFrequency);
+      uint32 FPS = PerfCountFrequency / CounterElapsed;
+      // NOTE(l4v): Mega cycles per frame
+      uint32 MCPF = (uint32)CyclesElapsed / 1000000;
+
+#if 0
+      system("clear");
+      std::cout << MSPerFrame << "ms/f " << FPS << "f/s " << MCPF
+		<< "Mc/f" << std::endl;
+      std::cout << "Estimate CPU clock: " << FPS * MCPF << std::endl;
+#endif
+      LastCounter = EndCounter;
+      LastCycleCount = EndCycleCount;
     }
 
   // NOTE(l4v): On some Linux systems that don't use ALSA's dmix system

@@ -1,1 +1,1 @@
-/usr/bin/c++  -g  -rdynamic CMakeFiles/dwarves.dir/dwarves_sdl.cpp.o  -o dwarves -lGL -lGLU -lSDL2 
+/usr/bin/c++  -g  -rdynamic CMakeFiles/dwarves.dir/dwarves.cpp.o CMakeFiles/dwarves.dir/dwarves_sdl.cpp.o  -o dwarves -lGL -lGLU -lSDL2 

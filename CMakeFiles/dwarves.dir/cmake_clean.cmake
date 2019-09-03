@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/dwarves.dir/dwarves.cpp.o"
   "CMakeFiles/dwarves.dir/dwarves_sdl.cpp.o"
   "dwarves"
   "dwarves.pdb"

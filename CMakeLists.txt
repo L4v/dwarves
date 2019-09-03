@@ -13,7 +13,7 @@ include_directories(${SDL2_INCLUDE_DIRS})
 set(EXECUTABLE_NAME "dwarves")
 set(CMAKE_CXX_FLAGS "-g")
 
-file(GLOB HEADERS "*.hpp")
+file(GLOB HEADERS "*.h")
 file(GLOB SOURCES "*.cpp")
 
 add_executable(${EXECUTABLE_NAME} ${HEADERS} ${SOURCES})
