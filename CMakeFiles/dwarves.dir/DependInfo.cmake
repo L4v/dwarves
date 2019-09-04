@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/jigsaw/workspace/cpp/games/dwarves/sdl_dwarves.cpp" "/home/jigsaw/workspace/cpp/games/dwarves/CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o"
+  "/home/hk-47/workspace/cpp/games/dwarves/sdl_dwarves.cpp" "/home/hk-47/workspace/cpp/games/dwarves/CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

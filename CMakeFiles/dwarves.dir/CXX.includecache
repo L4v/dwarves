@@ -6,26 +6,28 @@
 
 #IncludeRegexTransform: 
 
-/home/jigsaw/workspace/cpp/games/dwarves/dwarves.cpp
+/home/hk-47/workspace/cpp/games/dwarves/dwarves.cpp
 dwarves.h
-/home/jigsaw/workspace/cpp/games/dwarves/dwarves.h
+/home/hk-47/workspace/cpp/games/dwarves/dwarves.h
 
-/home/jigsaw/workspace/cpp/games/dwarves/dwarves.h
+/home/hk-47/workspace/cpp/games/dwarves/dwarves.h
 
-/home/jigsaw/workspace/cpp/games/dwarves/sdl_dwarves.cpp
+/home/hk-47/workspace/cpp/games/dwarves/sdl_dwarves.cpp
 stdint.h
 -
 cstddef
 -
+iostream
+-
 dwarves.h
-/home/jigsaw/workspace/cpp/games/dwarves/dwarves.h
+/home/hk-47/workspace/cpp/games/dwarves/dwarves.h
 dwarves.cpp
-/home/jigsaw/workspace/cpp/games/dwarves/dwarves.cpp
+/home/hk-47/workspace/cpp/games/dwarves/dwarves.cpp
 math.h
 -
 SDL2/SDL.h
-/home/jigsaw/workspace/cpp/games/dwarves/SDL2/SDL.h
-GL/gl.h
+/home/hk-47/workspace/cpp/games/dwarves/SDL2/SDL.h
+GL/glew.h
 -
 x86intrin.h
 -

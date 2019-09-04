@@ -17,6 +17,7 @@
  */
 #include <stdint.h>
 #include <cstddef>
+#include <iostream>
 
 #define internal static
 #define global_variable static
@@ -51,7 +52,7 @@ typedef double real64;
 // TODO(l4v): Implement own functions
 #include <math.h>
 #include "SDL2/SDL.h"
-#include <GL/gl.h>
+#include <GL/glew.h>
 #include <x86intrin.h>
 
 SDL_GameController* ControllerHandles[MAX_CONTROLLERS];
@@ -78,7 +79,29 @@ struct sdl_sound_output
   int32 SecondaryBufferSize;
 };
 
-void
+internal const char* LoadShader(const char* path)
+{
+  char* shaderText = 0;
+  int64 length;
+
+  FILE* file = fopen(path, "rb");
+  
+  if(file)
+    {
+      fseek(file, 0, SEEK_END);
+      length = ftell(file);
+      fseek(file, 0, SEEK_SET);
+      shaderText = (char*)malloc(length); // TODO(l4v): Use memory arenas
+      if(shaderText)
+	{
+	  fread(shaderText, 1, length, file);
+	}
+      fclose(file);
+    }
+  return shaderText;
+}
+
+internal void
 SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock, int32 BytesToWrite)
 {
   void* Region1 = (uint8*) AudioRingBuffer.Data + ByteToLock;
@@ -120,7 +143,7 @@ SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock, int32 BytesT
 }
 
 internal bool
-HandleEvent(SDL_Event* Event)
+SDLHandleEvent(SDL_Event* Event)
 {
   bool ShouldQuit = false;
 
@@ -140,6 +163,7 @@ HandleEvent(SDL_Event* Event)
 	    // NOTE(l4v): In case the window is resized
 	  case SDL_WINDOWEVENT_RESIZED:
 	    {
+	      glViewport(0, 0, Event->window.data1, Event->window.data2);
 	    }break;
 	  case SDL_WINDOWEVENT_EXPOSED:
 	    {
@@ -349,10 +373,9 @@ int main(void)
   SDL_PauseAudio(0);
   
   // NOTE(l4v): Setup the viewport
-  SDL_DisplayMode DisplayMode;
-  SDL_GetCurrentDisplayMode(0, &DisplayMode);
-  int32 Width = DisplayMode.w;
-  int32 Height = DisplayMode.h;
+  int32 Width, Height;
+  SDL_GetWindowSize(Window, &Width, &Height);
+  glewInit();
   glViewport(0, 0, Width, Height);
 
   // NOTE(l4v): For capturing the mouse and making it invisible
@@ -361,18 +384,81 @@ int main(void)
   // SDL_SetRelativeMouseMode(SDL_TRUE);
 
   // NOTE(l4v): Enable z-buffer
-  glEnable(GL_DEPTH_TEST);
+  // glEnable(GL_DEPTH_TEST);
 
   uint64 LastCounter = SDL_GetPerformanceCounter();
   uint64 LastCycleCount = _rdtsc();
   uint64 PerfCountFrequency = SDL_GetPerformanceFrequency();
+
+  const char* VertexShaderSource = LoadShader("triangle.vs");
+  const char* FragmentShaderSource = LoadShader("triangle.fs");
+  uint32 VertexShader;
+  VertexShader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(VertexShader, 1, &VertexShaderSource, 0);
+  glCompileShader(VertexShader);
+
+  int32 Success;
+  char InfoLog[512];
+  glGetShaderiv(VertexShader, GL_COMPILE_STATUS, &Success);
+  if(!Success)
+    {
+      glGetShaderInfoLog(VertexShader, 512, 0, InfoLog);
+      printf("ERROR::SHADER::VERTEX::COMPILATION_FAIL\n%s\n", InfoLog);
+    }
+
+  uint32 FragmentShader;
+  FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(FragmentShader, 1, &FragmentShaderSource, 0);
+  glCompileShader(FragmentShader);
+  glGetShaderiv(FragmentShader, GL_COMPILE_STATUS, &Success);
+  if(!Success)
+    {
+      glGetShaderInfoLog(FragmentShader, 512, 0, InfoLog);
+      printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAIL\n%s\n", InfoLog);
+    }
+
+  uint32 ShaderProgram;
+  ShaderProgram = glCreateProgram();
+
+  glAttachShader(ShaderProgram, VertexShader);
+  glAttachShader(ShaderProgram, FragmentShader);
+  glLinkProgram(ShaderProgram);
+      
+  glGetProgramiv(ShaderProgram, GL_LINK_STATUS, &Success);
+  if(!Success)
+    {
+      glGetProgramInfoLog(ShaderProgram, 512, 0, InfoLog);
+      printf("ERROR::SHADER::PROGRAM::LINKING_FAIL\n%s\n", InfoLog);
+    }
+
+  glDeleteShader(VertexShader);
+  glDeleteShader(FragmentShader);
+
+  
+  real32 Vertices[] = {
+		       -0.5f, -0.5f, 0.0f,
+		       0.5f, -0.5f, 0.0f,
+		       0.0f,  0.5f, 0.0f
+  };
+
+  uint32 VBO, VAO;
+  glGenBuffers(1, &VBO);
+  glGenVertexArrays(1, &VAO);
+
+  glBindVertexArray(VAO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(real32),
+			(void*)0);
+  glEnableVertexAttribArray(0);
+  
   // NOTE(l4v): Main loop
   while(1)
     {
       
       SDL_Event Event;
       SDL_WaitEvent(&Event);
-      if(HandleEvent(&Event))
+      if(SDLHandleEvent(&Event))
 	break;
 
       // NOTE(l4v): Controller input
@@ -426,10 +512,16 @@ int main(void)
 	}
       SDL_UnlockAudio();
       SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite);
-      
-      glClearColor(0.8f, 0.0f, 0.8f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+      // NOTE(l4v): Testing drawing
+      // --------------------------
+      glClearColor(0.8f, 0.0f, 0.8f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+
+      glUseProgram(ShaderProgram);
+      glBindVertexArray(VAO);
+      glDrawArrays(GL_TRIANGLES, 0, 3);
+      
       SDL_GL_SwapWindow(Window);
 
       uint64 EndCycleCount = _rdtsc();
