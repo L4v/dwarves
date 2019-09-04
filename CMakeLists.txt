@@ -13,9 +13,9 @@ include_directories(${SDL2_INCLUDE_DIRS})
 set(EXECUTABLE_NAME "dwarves")
 set(CMAKE_CXX_FLAGS "-g")
 
-file(GLOB HEADERS "*.h")
-file(GLOB SOURCES "*.cpp")
+#file(GLOB HEADERS "*.h")
+file(GLOB SOURCES "sdl_dwarves.cpp")
 
-add_executable(${EXECUTABLE_NAME} ${HEADERS} ${SOURCES})
+add_executable(${EXECUTABLE_NAME} ${SOURCES})
 
 target_link_libraries(${EXECUTABLE_NAME} ${OPENGL_LIBRARIES} ${SDL2_LIBRARIES})

@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/hk-47/workspace/op/cpp/games/dwarves
+CMAKE_SOURCE_DIR = /home/jigsaw/workspace/cpp/games/dwarves
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/hk-47/workspace/op/cpp/games/dwarves
+CMAKE_BINARY_DIR = /home/jigsaw/workspace/cpp/games/dwarves
 
 # Include any dependencies generated for this target.
 include CMakeFiles/dwarves.dir/depend.make
@@ -57,47 +57,32 @@ include CMakeFiles/dwarves.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/dwarves.dir/flags.make
 
-CMakeFiles/dwarves.dir/dwarves.cpp.o: CMakeFiles/dwarves.dir/flags.make
-CMakeFiles/dwarves.dir/dwarves.cpp.o: dwarves.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/hk-47/workspace/op/cpp/games/dwarves/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/dwarves.dir/dwarves.cpp.o"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/dwarves.dir/dwarves.cpp.o -c /home/hk-47/workspace/op/cpp/games/dwarves/dwarves.cpp
+CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o: CMakeFiles/dwarves.dir/flags.make
+CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o: sdl_dwarves.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/jigsaw/workspace/cpp/games/dwarves/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o -c /home/jigsaw/workspace/cpp/games/dwarves/sdl_dwarves.cpp
 
-CMakeFiles/dwarves.dir/dwarves.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/dwarves.dir/dwarves.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/hk-47/workspace/op/cpp/games/dwarves/dwarves.cpp > CMakeFiles/dwarves.dir/dwarves.cpp.i
+CMakeFiles/dwarves.dir/sdl_dwarves.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/dwarves.dir/sdl_dwarves.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jigsaw/workspace/cpp/games/dwarves/sdl_dwarves.cpp > CMakeFiles/dwarves.dir/sdl_dwarves.cpp.i
 
-CMakeFiles/dwarves.dir/dwarves.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/dwarves.dir/dwarves.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/hk-47/workspace/op/cpp/games/dwarves/dwarves.cpp -o CMakeFiles/dwarves.dir/dwarves.cpp.s
-
-CMakeFiles/dwarves.dir/dwarves_sdl.cpp.o: CMakeFiles/dwarves.dir/flags.make
-CMakeFiles/dwarves.dir/dwarves_sdl.cpp.o: dwarves_sdl.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/hk-47/workspace/op/cpp/games/dwarves/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/dwarves.dir/dwarves_sdl.cpp.o"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/dwarves.dir/dwarves_sdl.cpp.o -c /home/hk-47/workspace/op/cpp/games/dwarves/dwarves_sdl.cpp
-
-CMakeFiles/dwarves.dir/dwarves_sdl.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/dwarves.dir/dwarves_sdl.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/hk-47/workspace/op/cpp/games/dwarves/dwarves_sdl.cpp > CMakeFiles/dwarves.dir/dwarves_sdl.cpp.i
-
-CMakeFiles/dwarves.dir/dwarves_sdl.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/dwarves.dir/dwarves_sdl.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/hk-47/workspace/op/cpp/games/dwarves/dwarves_sdl.cpp -o CMakeFiles/dwarves.dir/dwarves_sdl.cpp.s
+CMakeFiles/dwarves.dir/sdl_dwarves.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/dwarves.dir/sdl_dwarves.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jigsaw/workspace/cpp/games/dwarves/sdl_dwarves.cpp -o CMakeFiles/dwarves.dir/sdl_dwarves.cpp.s
 
 # Object files for target dwarves
 dwarves_OBJECTS = \
-"CMakeFiles/dwarves.dir/dwarves.cpp.o" \
-"CMakeFiles/dwarves.dir/dwarves_sdl.cpp.o"
+"CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o"
 
 # External object files for target dwarves
 dwarves_EXTERNAL_OBJECTS =
 
-dwarves: CMakeFiles/dwarves.dir/dwarves.cpp.o
-dwarves: CMakeFiles/dwarves.dir/dwarves_sdl.cpp.o
+dwarves: CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o
 dwarves: CMakeFiles/dwarves.dir/build.make
 dwarves: /usr/lib/libGL.so
 dwarves: /usr/lib/libGLU.so
 dwarves: CMakeFiles/dwarves.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/hk-47/workspace/op/cpp/games/dwarves/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable dwarves"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/jigsaw/workspace/cpp/games/dwarves/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable dwarves"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/dwarves.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -110,6 +95,6 @@ CMakeFiles/dwarves.dir/clean:
 .PHONY : CMakeFiles/dwarves.dir/clean
 
 CMakeFiles/dwarves.dir/depend:
-	cd /home/hk-47/workspace/op/cpp/games/dwarves && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/hk-47/workspace/op/cpp/games/dwarves /home/hk-47/workspace/op/cpp/games/dwarves /home/hk-47/workspace/op/cpp/games/dwarves /home/hk-47/workspace/op/cpp/games/dwarves /home/hk-47/workspace/op/cpp/games/dwarves/CMakeFiles/dwarves.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/jigsaw/workspace/cpp/games/dwarves && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/jigsaw/workspace/cpp/games/dwarves /home/jigsaw/workspace/cpp/games/dwarves /home/jigsaw/workspace/cpp/games/dwarves /home/jigsaw/workspace/cpp/games/dwarves /home/jigsaw/workspace/cpp/games/dwarves/CMakeFiles/dwarves.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/dwarves.dir/depend
 
