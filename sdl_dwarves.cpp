@@ -17,7 +17,6 @@
  */
 #include <stdint.h>
 #include <cstddef>
-#include <iostream>
 
 #define internal static
 #define global_variable static
@@ -54,6 +53,7 @@ typedef double real64;
 #include "SDL2/SDL.h"
 #include <GL/glew.h>
 #include <x86intrin.h>
+#include <sys/mman.h>
 
 SDL_GameController* ControllerHandles[MAX_CONTROLLERS];
 SDL_Haptic* RumbleHandles[MAX_CONTROLLERS];
@@ -67,6 +67,10 @@ struct sdl_audio_ring_buffer
 };
 
 global_variable sdl_audio_ring_buffer AudioRingBuffer;
+global_variable void* BitmapMemory;
+global_variable int32 BitmapWidth;
+global_variable int32 BitmapHeight;
+
 
 struct sdl_sound_output
 {
@@ -142,6 +146,54 @@ SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock, int32 BytesT
     }
 }
 
+internal void
+SDLWindowResize(int32 Width, int32 Height)
+{
+  if(BitmapMemory)
+    munmap(BitmapMemory, BitmapWidth * BitmapHeight * 4);
+  
+  BitmapWidth = Width;
+  BitmapHeight = Height;
+  int32 BitmapMemorySize = (Width * Height) * 4;
+  BitmapMemory = mmap(0,
+		      BitmapMemorySize,
+		      PROT_READ | PROT_WRITE,
+		      MAP_ANONYMOUS | MAP_PRIVATE,
+		      -1,
+		      0);
+  glViewport(0, 0, Width, Height);
+
+  int32 Pitch = Width * 4;
+  uint8* Row = (uint8*)BitmapMemory;
+  for(int32 Y = 0;
+      Y < BitmapHeight;
+      ++Y)
+    {
+      uint8* Pixel = (uint8*)Row;
+      for(int32 X = 0;
+	  X < BitmapWidth;
+	  ++X)
+	{
+	  // Red
+	  *Pixel = 0;
+	  ++Pixel;
+
+	  // Green
+	  *Pixel = (uint8)Y;
+	  ++Pixel;
+
+	  // Blue
+	  *Pixel = (uint8)X;
+	  ++Pixel;
+
+	  *Pixel = 255;
+	  ++Pixel;
+	}
+      Row += Pitch;
+    }
+  
+}
+
 internal bool
 SDLHandleEvent(SDL_Event* Event)
 {
@@ -163,7 +215,7 @@ SDLHandleEvent(SDL_Event* Event)
 	    // NOTE(l4v): In case the window is resized
 	  case SDL_WINDOWEVENT_RESIZED:
 	    {
-	      glViewport(0, 0, Event->window.data1, Event->window.data2);
+	      SDLWindowResize(Event->window.data1, Event->window.data2);
 	    }break;
 	  case SDL_WINDOWEVENT_EXPOSED:
 	    {
@@ -377,7 +429,11 @@ int main(void)
   SDL_GetWindowSize(Window, &Width, &Height);
   glewInit();
   glViewport(0, 0, Width, Height);
+  BitmapWidth = Width;
+  BitmapHeight = Height;
 
+  SDLWindowResize(Width, Height);
+  
   // NOTE(l4v): For capturing the mouse and making it invisible
   // SDL_ShowCursor(SDL_DISABLE);
   // SDL_CaptureMouse(SDL_TRUE);
@@ -436,22 +492,55 @@ int main(void)
 
   
   real32 Vertices[] = {
-		       -0.5f, -0.5f, 0.0f,
-		       0.5f, -0.5f, 0.0f,
-		       0.0f,  0.5f, 0.0f
+		       // positions          // texture coords
+		       0.5f,  0.5f, 0.0f,    1.0f, 1.0f, // top right
+		       0.5f, -0.5f, 0.0f,    1.0f, 0.0f, // bottom right
+		       -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, // bottom left
+		       -0.5f,  0.5f, 0.0f,   0.0f, 1.0f  // top left 
   };
 
-  uint32 VBO, VAO;
+  uint32 Indices[] = {
+		      0, 1, 3,
+		      1, 2, 3
+  };
+  
+  uint32 VBO, VAO, EBO;
   glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
   glGenVertexArrays(1, &VAO);
 
   glBindVertexArray(VAO);
+  
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(real32),
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW);
+  
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(real32),
 			(void*)0);
   glEnableVertexAttribArray(0);
-  
+
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(real32),
+			(void*)(3 * sizeof(real32)));
+  glEnableVertexAttribArray(1);
+
+  uint32 texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, BitmapWidth, BitmapHeight,
+	       0, GL_RGBA, GL_UNSIGNED_BYTE, BitmapMemory);
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  glUseProgram(ShaderProgram);
+  glUniform1i(glGetUniformLocation(ShaderProgram, "texture1"), 0);
+
   // NOTE(l4v): Main loop
   while(1)
     {
@@ -518,9 +607,11 @@ int main(void)
       glClearColor(0.8f, 0.0f, 0.8f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT);
 
+      glBindTexture(GL_TEXTURE_2D, texture);
+      
       glUseProgram(ShaderProgram);
       glBindVertexArray(VAO);
-      glDrawArrays(GL_TRIANGLES, 0, 3);
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
       
       SDL_GL_SwapWindow(Window);
 
@@ -542,6 +633,8 @@ int main(void)
   // or PulseAudio, only one audio device can be open across the entire
   // system, thus to be safe, audio should be closed
   SDL_CloseAudio();
+  if(BitmapMemory)
+    munmap(BitmapMemory, Width * Height * 4);
   
   return 0;
 }
