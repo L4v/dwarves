@@ -155,21 +155,22 @@ SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock, int32 BytesT
 internal void
 SDLWindowResize(sdl_offscreen_buffer* Buffer, int32 Width, int32 Height)
 {
-  Buffer->BytesPerPixel = 4;
-  if(Buffer->Memory)
-    munmap(Buffer->Memory, Buffer->Width * Buffer->Height * Buffer->BytesPerPixel);
+  // Buffer->BytesPerPixel = 4;
+  // if(Buffer->Memory)
+  //   munmap(Buffer->Memory, Buffer->Width * Buffer->Height * Buffer->BytesPerPixel);
 
-  Buffer->Width = Width;
-  Buffer->Height = Height;
-  int32 BitmapMemorySize = (Buffer->Width * Buffer->Height) * Buffer->BytesPerPixel;
-  Buffer->Memory = mmap(0,
-		      BitmapMemorySize,
-		      PROT_READ | PROT_WRITE,
-		      MAP_ANONYMOUS | MAP_PRIVATE,
-		      -1,
-		      0);
-  glViewport(0, 0, Buffer->Width, Buffer->Height);
-  Buffer->Pitch = Buffer->Width * Buffer->BytesPerPixel;
+  // // NOTE(l4v): Commented out to make the texture stretch with the window size
+  // // Buffer->Width = Width;
+  // // Buffer->Height = Height;
+  // int32 BitmapMemorySize = (Buffer->Width * Buffer->Height) * Buffer->BytesPerPixel;
+  // Buffer->Memory = mmap(0,
+  // 		      BitmapMemorySize,
+  // 		      PROT_READ | PROT_WRITE,
+  // 		      MAP_ANONYMOUS | MAP_PRIVATE,
+  // 		      -1,
+  // 		      0);
+  glViewport(0, 0, Width, Height);
+  // Buffer->Pitch = Buffer->Width * Buffer->BytesPerPixel;
 }
 
 internal void
@@ -539,6 +540,18 @@ int main(void)
 
   glUseProgram(ShaderProgram);
   glUniform1i(glGetUniformLocation(ShaderProgram, "texture1"), 0);
+
+  GlobalBackBuffer.BytesPerPixel = 4;
+  GlobalBackBuffer.Width = Width;
+  GlobalBackBuffer.Height = Height;
+  int32 BitmapMemorySize = (GlobalBackBuffer.Width * GlobalBackBuffer.Height) * GlobalBackBuffer.BytesPerPixel;
+  GlobalBackBuffer.Memory = mmap(0,
+			BitmapMemorySize,
+			PROT_READ | PROT_WRITE,
+			MAP_ANONYMOUS | MAP_PRIVATE,
+			-1,
+			0);
+  GlobalBackBuffer.Pitch = GlobalBackBuffer.Width * GlobalBackBuffer.BytesPerPixel;
 
   int32
     xOffset = 0,
