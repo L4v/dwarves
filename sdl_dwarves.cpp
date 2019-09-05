@@ -66,11 +66,17 @@ struct sdl_audio_ring_buffer
   void* Data;
 };
 
-global_variable sdl_audio_ring_buffer AudioRingBuffer;
-global_variable void* BitmapMemory;
-global_variable int32 BitmapWidth;
-global_variable int32 BitmapHeight;
+struct sdl_offscreen_buffer
+{
+  void* Memory;
+  int32 Width;
+  int32 Height;
+  int32 Pitch;
+  int32 BytesPerPixel;
+};
 
+global_variable sdl_audio_ring_buffer AudioRingBuffer;
+global_variable sdl_offscreen_buffer GlobalBackBuffer;
 
 struct sdl_sound_output
 {
@@ -147,145 +153,23 @@ SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock, int32 BytesT
 }
 
 internal void
-SDLWindowResize(int32 Width, int32 Height)
+SDLWindowResize(sdl_offscreen_buffer* Buffer, int32 Width, int32 Height)
 {
-  if(BitmapMemory)
-    munmap(BitmapMemory, BitmapWidth * BitmapHeight * 4);
-  
-  BitmapWidth = Width;
-  BitmapHeight = Height;
-  int32 BitmapMemorySize = (Width * Height) * 4;
-  BitmapMemory = mmap(0,
+  Buffer->BytesPerPixel = 4;
+  if(Buffer->Memory)
+    munmap(Buffer->Memory, Buffer->Width * Buffer->Height * Buffer->BytesPerPixel);
+
+  Buffer->Width = Width;
+  Buffer->Height = Height;
+  int32 BitmapMemorySize = (Buffer->Width * Buffer->Height) * Buffer->BytesPerPixel;
+  Buffer->Memory = mmap(0,
 		      BitmapMemorySize,
 		      PROT_READ | PROT_WRITE,
 		      MAP_ANONYMOUS | MAP_PRIVATE,
 		      -1,
 		      0);
-  glViewport(0, 0, Width, Height);
-
-  int32 Pitch = Width * 4;
-  uint8* Row = (uint8*)BitmapMemory;
-  for(int32 Y = 0;
-      Y < BitmapHeight;
-      ++Y)
-    {
-      uint8* Pixel = (uint8*)Row;
-      for(int32 X = 0;
-	  X < BitmapWidth;
-	  ++X)
-	{
-	  // Red
-	  *Pixel = 0;
-	  ++Pixel;
-
-	  // Green
-	  *Pixel = (uint8)Y;
-	  ++Pixel;
-
-	  // Blue
-	  *Pixel = (uint8)X;
-	  ++Pixel;
-
-	  *Pixel = 255;
-	  ++Pixel;
-	}
-      Row += Pitch;
-    }
-  
-}
-
-internal bool
-SDLHandleEvent(SDL_Event* Event)
-{
-  bool ShouldQuit = false;
-
-  switch(Event->type)
-    {
-      // NOTE(l4v): In case of quitting the window
-    case SDL_QUIT:
-      {
-	ShouldQuit = true; 
-      }break;
-
-      // NOTE(l4v): Window events, resize and such
-    case SDL_WINDOWEVENT:
-      {
-	switch(Event->window.event)
-	  {
-	    // NOTE(l4v): In case the window is resized
-	  case SDL_WINDOWEVENT_RESIZED:
-	    {
-	      SDLWindowResize(Event->window.data1, Event->window.data2);
-	    }break;
-	  case SDL_WINDOWEVENT_EXPOSED:
-	    {
-	      // TODO(l4v): Maybe update window when exposed only?
-	    }break;
-	  }
-      }break;
-
-    case SDL_KEYDOWN:
-    case SDL_KEYUP:
-      {
-	SDL_Keycode Keycode = Event->key.keysym.sym;
-	bool IsDown = (Event->key.state == SDL_PRESSED);
-	bool WasDown = false;
-
-	if(Event->key.state == SDL_RELEASED)
-	  {
-	    WasDown = true;
-	  }
-	else if(Event->key.repeat)
-	  {
-	    WasDown = true;
-	  }
-
-	if(!(Event->key.repeat))
-	  {
-	    if(Keycode == SDLK_w)
-	      {
-	      }
-	    else if(Keycode == SDLK_a)
-	      {
-	      }
-	    else if(Keycode == SDLK_s)
-	      {
-	      }
-	    else if(Keycode == SDLK_d)
-	      {
-	      }
-	    else if(Keycode == SDLK_q)
-	      {
-	      }
-	    else if(Keycode == SDLK_e)
-	      {
-	      }
-	    else if(Keycode == SDLK_UP)
-	      {
-	      }
-	    else if(Keycode == SDLK_LEFT)
-	      {
-	      }
-	    else if(Keycode == SDLK_DOWN)
-	      {
-	      }
-	    else if(Keycode == SDLK_RIGHT)
-	      {
-	      }
-	    else if(Keycode == SDLK_ESCAPE)
-	      {
-		ShouldQuit = true;
-	      }
-	    else if(Keycode == SDLK_SPACE)
-	      {
-		
-	      }
-	  }
-	
-      }break;
-    }
-  
-  return ShouldQuit;
+  glViewport(0, 0, Buffer->Width, Buffer->Height);
+  Buffer->Pitch = Buffer->Width * Buffer->BytesPerPixel;
 }
 
 internal void
@@ -361,6 +245,125 @@ SDLInitAudio(int32 SamplesPerSec, int32 BufferSize)
       SDL_CloseAudio();
     }
 }
+internal bool
+SDLHandleEvent(SDL_Event* Event)
+{
+  bool ShouldQuit = false;
+
+  switch(Event->type)
+    {
+      // NOTE(l4v): In case of quitting the window
+    case SDL_QUIT:
+      {
+	ShouldQuit = true; 
+      }break;
+
+      // NOTE(l4v): Window events, resize and such
+    case SDL_WINDOWEVENT:
+      {
+	switch(Event->window.event)
+	  {
+	    // NOTE(l4v): In case the window is resized
+	  case SDL_WINDOWEVENT_RESIZED:
+	    {
+	      SDLWindowResize(&GlobalBackBuffer, Event->window.data1, Event->window.data2);
+	    }break;
+	  case SDL_WINDOWEVENT_EXPOSED:
+	    {
+	      // TODO(l4v): Maybe update window when exposed only?
+	    }break;
+	  }
+      }break;
+
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+      {
+	SDL_Keycode Keycode = Event->key.keysym.sym;
+	bool IsDown = (Event->key.state == SDL_PRESSED);
+	bool WasDown = false;
+
+	if(Event->key.state == SDL_RELEASED)
+	  {
+	    WasDown = true;
+	  }
+	else if(Event->key.repeat)
+	  {
+	    WasDown = true;
+	  }
+
+	if(!(Event->key.repeat))
+	  {
+	    if(Keycode == SDLK_w)
+	      {
+	      }
+	    else if(Keycode == SDLK_a)
+	      {
+	      }
+	    else if(Keycode == SDLK_s)
+	      {
+	      }
+	    else if(Keycode == SDLK_d)
+	      {
+	      }
+	    else if(Keycode == SDLK_q)
+	      {
+	      }
+	    else if(Keycode == SDLK_e)
+	      {
+	      }
+	    else if(Keycode == SDLK_UP)
+	      {
+	      }
+	    else if(Keycode == SDLK_LEFT)
+	      {
+	      }
+	    else if(Keycode == SDLK_DOWN)
+	      {
+	      }
+	    else if(Keycode == SDLK_RIGHT)
+	      {
+	      }
+	    else if(Keycode == SDLK_ESCAPE)
+	      {
+		ShouldQuit = true;
+	      }
+	    else if(Keycode == SDLK_SPACE)
+	      {
+		
+	      }
+	  }
+	
+      }break;
+    }
+  
+  return ShouldQuit;
+}
+
+internal void
+RenderWeirdGradient(sdl_offscreen_buffer* Buffer, int32 XOffset, int32 YOffset)
+{
+  // TODO(l4v): Pass by value for now, checking what the optimizer
+  // does
+  uint8* Row = (uint8*)Buffer->Memory;
+  for(int32 Y = 0;
+      Y < Buffer->Height;
+      ++Y)
+    {
+      uint32* Pixel = (uint32*)Row;
+      for(int32 X = 0;
+	  X < Buffer->Width;
+	  ++X)
+	{
+	  uint8 Blue = (X + XOffset);
+	  uint8 Green = (Y + YOffset);
+
+	  // NOTE(l4v): The pixels are written as: RR GG BB AA
+	  *Pixel++ = ((Green << 8) | (Blue << 16));
+	  
+	}
+      Row += Buffer->Pitch;
+    }
+}
 
 int main(void)
 {
@@ -429,10 +432,10 @@ int main(void)
   SDL_GetWindowSize(Window, &Width, &Height);
   glewInit();
   glViewport(0, 0, Width, Height);
-  BitmapWidth = Width;
-  BitmapHeight = Height;
+  GlobalBackBuffer.Width = Width;
+  GlobalBackBuffer.Height = Height;
 
-  SDLWindowResize(Width, Height);
+  SDLWindowResize(&GlobalBackBuffer, Width, Height);
   
   // NOTE(l4v): For capturing the mouse and making it invisible
   // SDL_ShowCursor(SDL_DISABLE);
@@ -493,10 +496,10 @@ int main(void)
   
   real32 Vertices[] = {
 		       // positions          // texture coords
-		       0.5f,  0.5f, 0.0f,    1.0f, 1.0f, // top right
-		       0.5f, -0.5f, 0.0f,    1.0f, 0.0f, // bottom right
-		       -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, // bottom left
-		       -0.5f,  0.5f, 0.0f,   0.0f, 1.0f  // top left 
+		       1.0f,  1.0f, 0.0f,    1.0f, 1.0f, // top right
+		       1.0f, -1.0f, 0.0f,    1.0f, 0.0f, // bottom right
+		       -1.0f, -1.0f, 0.0f,   0.0f, 0.0f, // bottom left
+		       -1.0f,  1.0f, 0.0f,   0.0f, 1.0f  // top left 
   };
 
   uint32 Indices[] = {
@@ -534,22 +537,25 @@ int main(void)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, BitmapWidth, BitmapHeight,
-	       0, GL_RGBA, GL_UNSIGNED_BYTE, BitmapMemory);
-  glGenerateMipmap(GL_TEXTURE_2D);
-
   glUseProgram(ShaderProgram);
   glUniform1i(glGetUniformLocation(ShaderProgram, "texture1"), 0);
 
-  // NOTE(l4v): Main loop
-  while(1)
-    {
-      
-      SDL_Event Event;
-      SDL_WaitEvent(&Event);
-      if(SDLHandleEvent(&Event))
-	break;
+  int32
+    xOffset = 0,
+    yOffset = 0;
 
+  bool Running = true;
+  
+  // NOTE(l4v): Main loop
+  while(Running)
+    {
+      SDL_Event Event;
+      while(SDL_PollEvent(&Event))
+	{
+	  if(SDLHandleEvent(&Event))
+	    Running = false;
+	}
+      
       // NOTE(l4v): Controller input
       for(int32 ControllerIndex = 0;
 	  ControllerIndex < MAX_CONTROLLERS;
@@ -580,7 +586,13 @@ int main(void)
 	      // TODO(l4v): This controller is note plugged in.
 	    }
 	}
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GlobalBackBuffer.Width, GlobalBackBuffer.Height,
+		   0, GL_RGBA, GL_UNSIGNED_BYTE, GlobalBackBuffer.Memory);
+      glGenerateMipmap(GL_TEXTURE_2D);
 
+      ++xOffset;
+      
+      RenderWeirdGradient(&GlobalBackBuffer, xOffset, yOffset);
       GameUpdateAndRender();
       
       SDL_LockAudio();
@@ -633,8 +645,8 @@ int main(void)
   // or PulseAudio, only one audio device can be open across the entire
   // system, thus to be safe, audio should be closed
   SDL_CloseAudio();
-  if(BitmapMemory)
-    munmap(BitmapMemory, Width * Height * 4);
+  if(GlobalBackBuffer.Memory)
+    munmap(GlobalBackBuffer.Memory, Width * Height * 4);
   
   return 0;
 }
