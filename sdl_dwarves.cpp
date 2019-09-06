@@ -49,6 +49,7 @@ typedef double real64;
 
 #include "dwarves.h"
 #include "dwarves.cpp"
+#include "sdl_dwarves.h"
 
 #include "SDL2/SDL.h"
 #include <GL/glew.h>
@@ -58,39 +59,9 @@ typedef double real64;
 SDL_GameController* ControllerHandles[MAX_CONTROLLERS];
 SDL_Haptic* RumbleHandles[MAX_CONTROLLERS];
 
-struct sdl_audio_ring_buffer
-{
-  int32 Size;
-  int32 WriteCursor;
-  int32 PlayCursor;
-  void* Data;
-};
-
-struct sdl_offscreen_buffer
-{
-  void* Memory;
-  int32 Width;
-  int32 Height;
-  int32 Pitch;
-  int32 BytesPerPixel;
-};
-
 
 global_variable sdl_audio_ring_buffer AudioRingBuffer;
 global_variable sdl_offscreen_buffer GlobalBackBuffer;
-
-struct sdl_sound_output
-{
-  int32 SamplesPerSec;
-  int32 ToneHz;
-  int16 ToneVolume;
-  uint32 RunningSampleIndex;
-  int32 WavePeriod;
-  int32 BytesPerSample;
-  int32 SecondaryBufferSize;
-  real32 tSine;
-  int32 LatencySampleCount;
-};
 
 internal const char* LoadShader(const char* path)
 {
@@ -365,8 +336,8 @@ int main(void)
 			    "Dwarves",
 			    SDL_WINDOWPOS_UNDEFINED,
 			    SDL_WINDOWPOS_UNDEFINED,
-			    640,
-			    480,
+			    1024,
+			    768,
 			    SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL
 );
 
@@ -391,10 +362,8 @@ int main(void)
   sdl_sound_output SoundOutput = {};
     
   SoundOutput.SamplesPerSec = 48000;
-  SoundOutput.ToneHz = 256;
-  SoundOutput.ToneVolume = 3000;
   SoundOutput.RunningSampleIndex = 0;
-  SoundOutput.WavePeriod = SoundOutput.SamplesPerSec / SoundOutput.ToneHz;
+
   SoundOutput.BytesPerSample = sizeof(int16) * 2;
   SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSec * SoundOutput.BytesPerSample;
   SoundOutput.tSine = 0.0f;
@@ -402,9 +371,9 @@ int main(void)
   
   SDLInitAudio(SoundOutput.SamplesPerSec, SoundOutput.SecondaryBufferSize);
   int16* Samples = (int16*)calloc(SoundOutput.SamplesPerSec,
-				  SoundOutput.BytesPerSample);
+  				  SoundOutput.BytesPerSample);
   SDL_PauseAudio(0);
-  
+
   // NOTE(l4v): Setup the viewport
   int32 Width, Height;
   SDL_GetWindowSize(Window, &Width, &Height);
@@ -530,10 +499,6 @@ int main(void)
 			0);
   GlobalBackBuffer.Pitch = GlobalBackBuffer.Width * GlobalBackBuffer.BytesPerPixel;
 
-  int32
-    XOffset = 0,
-    YOffset = 0;
-
   bool Running = true;
   
   // NOTE(l4v): Main loop
@@ -569,39 +534,24 @@ int main(void)
 	      bool YButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_Y);
 
 	      int16 StickX = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTX);
-	      int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTY);
+	      int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTY);	      
 	    }
 	  else
 	    {
 	      // TODO(l4v): This controller is note plugged in.
 	    }
 	}
+      
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GlobalBackBuffer.Width, GlobalBackBuffer.Height,
 		   0, GL_RGBA, GL_UNSIGNED_BYTE, GlobalBackBuffer.Memory);
       glGenerateMipmap(GL_TEXTURE_2D);
-
-      ++XOffset;
-
-      game_sound_output_buffer SoundBuffer = {};
-      SoundBuffer.SamplesPerSec = SoundOutput.SamplesPerSec;
-      // NOTE(l4v): For 30fps
-      SoundBuffer.SampleCount = SoundBuffer.SamplesPerSec / 30.0f;
-      SoundBuffer.Samples = Samples;
-      
-      game_offscreen_buffer Buffer = {};
-      Buffer.Memory = GlobalBackBuffer.Memory;
-      Buffer.Width = GlobalBackBuffer.Width;
-      Buffer.Height = GlobalBackBuffer.Height;
-      Buffer.Pitch = GlobalBackBuffer.Pitch;
-      Buffer.BytesPerPixel = GlobalBackBuffer.BytesPerPixel;
-      GameUpdateAndRender(&Buffer, XOffset, YOffset, &SoundBuffer);
       
       SDL_LockAudio();
       int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) % SoundOutput.SecondaryBufferSize;
       int32 TargetCursor =
 	((AudioRingBuffer.PlayCursor +
 	  (SoundOutput.LatencySampleCount * SoundOutput.BytesPerSample))
-	% SoundOutput.SecondaryBufferSize);
+	 % SoundOutput.SecondaryBufferSize);
       int32 BytesToWrite = 0;
       if(ByteToLock  > TargetCursor)
 	{
@@ -613,6 +563,21 @@ int main(void)
 	  BytesToWrite = TargetCursor - ByteToLock;
 	}
       SDL_UnlockAudio();
+      
+      game_sound_output_buffer SoundBuffer = {};
+      SoundBuffer.SamplesPerSec = SoundOutput.SamplesPerSec;
+      // NOTE(l4v): For 30fps
+      SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;//SoundBuffer.SamplesPerSec / 15.0f;
+      SoundBuffer.Samples = Samples;
+      
+      game_offscreen_buffer Buffer = {};
+      Buffer.Memory = GlobalBackBuffer.Memory;
+      Buffer.Width = GlobalBackBuffer.Width;
+      Buffer.Height = GlobalBackBuffer.Height;
+      Buffer.Pitch = GlobalBackBuffer.Pitch;
+      Buffer.BytesPerPixel = GlobalBackBuffer.BytesPerPixel;
+      GameUpdateAndRender(&Buffer, &SoundBuffer);
+      
       SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite,
 			 &SoundBuffer);
 

@@ -3,7 +3,7 @@
 internal void
 GameOutputSound(game_sound_output_buffer* SoundBuffer)
 {
-  local_persist real32 tSine;
+  local_persist real32 tSine = 0.0f;
   int16 ToneVolume = 3000;
   int32 ToneHz = 256;
   int32 WavePeriod = SoundBuffer->SamplesPerSec / ToneHz;
@@ -42,16 +42,28 @@ RenderWeirdGradient(game_offscreen_buffer* Buffer, int32 XOffset,
 
 	  // NOTE(l4v): The pixels are written as: RR GG BB AA
 	  *Pixel++ = ((Green << 8) | (Blue << 16));
-	  
 	}
       Row += Buffer->Pitch;
     }
 }
 
 internal void
-GameUpdateAndRender(game_offscreen_buffer* Buffer, int32 XOffset,
-		    int32 YOffset, game_sound_output_buffer* SoundBuffer)
+GameUpdateAndRender(game_offscreen_buffer* Buffer, game_sound_output_buffer* SoundBuffer)
 {
+  local_persist int32 XOffset = 0;
+  local_persist int32 YOffset = 0;
+  local_persist int32 ToneHz = 256;
+
+  if(Input.IsAnalog)
+    {
+      // NOTE(l4v): Use analog movement
+    }
+  else
+    {
+      // NOTE(l4v): Use digital movement
+      
+    }
+  
   // TODO(l4v): Allow sample offsets here for more robust
   // platform options
   GameOutputSound(SoundBuffer);

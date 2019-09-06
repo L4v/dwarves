@@ -4,4 +4,5 @@
 CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o: dwarves.cpp
 CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o: dwarves.h
 CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o: sdl_dwarves.cpp
+CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o: sdl_dwarves.h
 
