@@ -17,12 +17,12 @@ stdint.h
 -
 cstddef
 -
+math.h
+-
 dwarves.h
 /home/hk-47/workspace/cpp/games/dwarves/dwarves.h
 dwarves.cpp
 /home/hk-47/workspace/cpp/games/dwarves/dwarves.cpp
-math.h
--
 SDL2/SDL.h
 /home/hk-47/workspace/cpp/games/dwarves/SDL2/SDL.h
 GL/glew.h
