@@ -126,6 +126,17 @@ SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock,
 }
 
 internal void
+SDLProcessGameControllerButton(game_button_state* OldState,
+			       game_button_state* NewState,
+			       SDL_GameController* ControllerHandle,
+			       SDL_GameControllerButton Button)
+{
+  NewState->EndedDown = SDL_GameControllerGetButton(ControllerHandle, Button);
+  NewState->HalfTransitionCount =
+    (OldState->EndedDown != NewState->EndedDown) ? 1 : 0;
+}
+
+internal void
 SDLWindowResize(sdl_offscreen_buffer* Buffer, int32 Width, int32 Height)
 {
   // Buffer->BytesPerPixel = 4;
@@ -170,6 +181,7 @@ SDLOpenGameControllers()
       ControllerHandles[ControllerIndex] = SDL_GameControllerOpen(JoystickIndex);
       RumbleHandles[ControllerIndex] = SDL_HapticOpen(JoystickIndex);
       ControllerIndex++;
+      printf("Is game controller!\n");
     }  
 }
 
@@ -218,10 +230,10 @@ SDLInitAudio(int32 SamplesPerSec, int32 BufferSize)
       SDL_CloseAudio();
     }
 }
-internal bool
+internal bool32
 SDLHandleEvent(SDL_Event* Event)
 {
-  bool ShouldQuit = false;
+  bool32 ShouldQuit = false;
 
   switch(Event->type)
     {
@@ -252,8 +264,8 @@ SDLHandleEvent(SDL_Event* Event)
     case SDL_KEYUP:
       {
 	SDL_Keycode Keycode = Event->key.keysym.sym;
-	bool IsDown = (Event->key.state == SDL_PRESSED);
-	bool WasDown = false;
+	bool32 IsDown = (Event->key.state == SDL_PRESSED);
+	bool32 WasDown = false;
 
 	if(Event->key.state == SDL_RELEASED)
 	  {
@@ -317,7 +329,7 @@ int main(void)
 
   SDL_Window* Window = 0;
   SDL_GLContext GLContext;
-  bool quit = false;
+  bool32 quit = false;
 
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -325,6 +337,7 @@ int main(void)
 
   if(SDL_Init(SDL_INIT_VIDEO
 	      | SDL_INIT_GAMECONTROLLER
+	      | SDL_INIT_JOYSTICK
 	      | SDL_INIT_HAPTIC
 	      | SDL_INIT_AUDIO) > 0)
     {
@@ -499,11 +512,17 @@ int main(void)
 			0);
   GlobalBackBuffer.Pitch = GlobalBackBuffer.Width * GlobalBackBuffer.BytesPerPixel;
 
-  bool Running = true;
+
+  game_input Input[2];
+  game_input* NewInput = &Input[0];
+  game_input* OldInput = &Input[1];
   
+  bool32 Running = true;
   // NOTE(l4v): Main loop
   while(Running)
     {
+
+      
       SDL_Event Event;
       while(SDL_PollEvent(&Event))
 	{
@@ -512,29 +531,101 @@ int main(void)
 	}
       
       // NOTE(l4v): Controller input
+      int MaxControllerCount = MAX_CONTROLLERS;
+      if(MaxControllerCount > ArrayCount(NewInput->Controllers))
+	{
+	  MaxControllerCount = ArrayCount(NewInput->Controllers);
+	}
       for(int32 ControllerIndex = 0;
-	  ControllerIndex < MAX_CONTROLLERS;
+	  ControllerIndex < MaxControllerCount;
 	  ++ControllerIndex)
 	{
 	  if(ControllerHandles[ControllerIndex] != 0
 	     && SDL_GameControllerGetAttached(ControllerHandles[ControllerIndex]))
 	    {
-	      // NOTE: We have a controller with index ControllerIndex.
-	      bool Up = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_UP);
-	      bool Down = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_DOWN);
-	      bool Left = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-	      bool Right = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
-	      bool Start = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_START);
-	      bool Back = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_BACK);
-	      bool LeftShoulder = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-	      bool RightShoulder = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-	      bool AButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_A);
-	      bool BButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_B);
-	      bool XButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_X);
-	      bool YButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_Y);
+	      game_controller_input *OldController = &OldInput->Controllers[ControllerIndex];
+	      game_controller_input *NewController = &NewInput->Controllers[ControllerIndex];
+	      // TODO(l4v): Handle deadzones
+	      
+	      // NOTE(l4v): We have a controller with index ControllerIndex.
 
+	      // TODO(l4v): DPad
+	      bool32 Up = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_UP);
+	      bool32 Down = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+	      bool32 Left = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+	      bool32 Right = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+	      
 	      int16 StickX = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTX);
-	      int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTY);	      
+	      int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTY);
+
+	      NewController->StartX = OldController->EndX;
+	      NewController->StartY = OldController->EndY;
+	      
+	      // NOTE(l4v): Normalizing the value
+	      if(StickX < 0)
+		{
+		  NewController->EndX = StickX / 32768.0f;
+		}
+	      else
+		{
+		  NewController->EndX = StickX / 32767.0;
+		}
+
+	      NewController->StartX = OldController->EndX;
+	      NewController->StartY = OldController->EndY;
+
+	      // TODO(l4v): Min / max macros
+	      // TODO(l4v): Collapse to single function
+	      NewController->MinX = NewController->MaxX =
+		NewController->EndX;
+	      
+	      if(StickY < 0)
+		{
+		  NewController->EndY = StickY / 32768.0f;
+		}
+	      else
+		{
+		  NewController->EndY = StickY / 32767.0;
+		}
+	      NewController->MinX = NewController->MaxX =
+		NewController->EndX;
+	      
+	      SDLProcessGameControllerButton(&(OldController->Down),
+					     &(NewController->Down),
+					     ControllerHandles[ControllerIndex],
+					     SDL_CONTROLLER_BUTTON_A);
+	      SDLProcessGameControllerButton(&(OldController->Right),
+					     &(NewController->Right),
+					     ControllerHandles[ControllerIndex],
+					     SDL_CONTROLLER_BUTTON_B);
+	      SDLProcessGameControllerButton(&(OldController->Left),
+					     &(NewController->Left),
+					     ControllerHandles[ControllerIndex],
+					     SDL_CONTROLLER_BUTTON_X);
+	      SDLProcessGameControllerButton(&(OldController->Up),
+					     &(NewController->Up),
+					     ControllerHandles[ControllerIndex],
+					     SDL_CONTROLLER_BUTTON_Y);
+	      SDLProcessGameControllerButton(&(OldController->LeftShoulder),
+					     &(NewController->LeftShoulder),
+					     ControllerHandles[ControllerIndex],
+					     SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+	      SDLProcessGameControllerButton(&(OldController->RightShoulder),
+					     &(NewController->RightShoulder),
+					     ControllerHandles[ControllerIndex],
+					     SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+	      
+	      // bool32 Start = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_START);
+	      // bool32 Back = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_BACK);
+	      
+	      // bool32 LeftShoulder = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+	      // bool32 RightShoulder = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+	      
+	      // bool32 AButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_A);
+	      // bool32 BButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_B);
+	      // bool32 XButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_X);
+	      // bool32 YButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_Y);
+
 	    }
 	  else
 	    {
@@ -576,7 +667,7 @@ int main(void)
       Buffer.Height = GlobalBackBuffer.Height;
       Buffer.Pitch = GlobalBackBuffer.Pitch;
       Buffer.BytesPerPixel = GlobalBackBuffer.BytesPerPixel;
-      GameUpdateAndRender(&Buffer, &SoundBuffer);
+      GameUpdateAndRender(Input, &Buffer, &SoundBuffer);
       
       SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite,
 			 &SoundBuffer);
@@ -606,6 +697,11 @@ int main(void)
 
       LastCounter = EndCounter;
       LastCycleCount = EndCycleCount;
+
+      game_input* Temp = NewInput;
+      NewInput = OldInput;
+      OldInput = Temp;
+      // TODO(l4v): Should they be cleared?
     }
 
   // NOTE(l4v): On some Linux systems that don't use ALSA's dmix system

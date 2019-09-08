@@ -22,8 +22,8 @@ GameOutputSound(game_sound_output_buffer* SoundBuffer)
 }
 
 internal void
-RenderWeirdGradient(game_offscreen_buffer* Buffer, int32 XOffset,
-		    int32 YOffset)
+RenderWeirdGradient(game_offscreen_buffer* Buffer, int32 BlueOffset,
+		    int32 GreenOffset)
 {
   // TODO(l4v): Pass by value for now, checking what the optimizer
   // does
@@ -37,8 +37,8 @@ RenderWeirdGradient(game_offscreen_buffer* Buffer, int32 XOffset,
 	  X < Buffer->Width;
 	  ++X)
 	{
-	  uint8 Blue = (X + XOffset);
-	  uint8 Green = (Y + YOffset);
+	  uint8 Blue = (X + BlueOffset);
+	  uint8 Green = (Y + GreenOffset);
 
 	  // NOTE(l4v): The pixels are written as: RR GG BB AA
 	  *Pixel++ = ((Green << 8) | (Blue << 16));
@@ -48,24 +48,36 @@ RenderWeirdGradient(game_offscreen_buffer* Buffer, int32 XOffset,
 }
 
 internal void
-GameUpdateAndRender(game_offscreen_buffer* Buffer, game_sound_output_buffer* SoundBuffer)
+GameUpdateAndRender(game_input* Input,
+		    game_offscreen_buffer* Buffer,
+		    game_sound_output_buffer* SoundBuffer)
 {
-  local_persist int32 XOffset = 0;
-  local_persist int32 YOffset = 0;
+  local_persist int32 BlueOffset = 0;
+  local_persist int32 GreenOffset = 0;
   local_persist int32 ToneHz = 256;
-
-  if(Input.IsAnalog)
+  
+  game_controller_input* Input0 = &Input->Controllers[0];
+  
+  if(Input0->IsAnalog)
     {
       // NOTE(l4v): Use analog movement
+      ToneHz = 256 * (int32)(128.0f * (Input0->EndX));
+      BlueOffset += (int32)(4.0f * (Input0->EndY));
     }
   else
     {
       // NOTE(l4v): Use digital movement
       
     }
+
+  if(Input0->Down.EndedDown)
+    {
+      BlueOffset++;
+    }
+
   
   // TODO(l4v): Allow sample offsets here for more robust
   // platform options
   GameOutputSound(SoundBuffer);
-  RenderWeirdGradient(Buffer, XOffset, YOffset);
+  RenderWeirdGradient(Buffer, BlueOffset, GreenOffset);
 }
