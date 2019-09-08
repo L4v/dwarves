@@ -17,16 +17,13 @@
  */
 #include <stdint.h>
 #include <cstddef>
+#include <cstdio>
 // TODO(l4v): Implement own functions
 #include <math.h>
 
 #define internal static
 #define global_variable static
 #define local_persist static
-
-#define Kibibytes(Value) ((Value)*1024LL)
-#define Mebibytes(Value) (Kibibytes(Value)*1024LL)
-#define Gibibytes(Value) (Mebibytes(Value)*1024LL)
 
 #define MAX_CONTROLLERS 4
 #define Pi32 3.14159265359f
@@ -516,6 +513,16 @@ int main(void)
   game_input Input[2];
   game_input* NewInput = &Input[0];
   game_input* OldInput = &Input[1];
+
+  game_memory GameMemory = {};
+  GameMemory.PermanentStorageSize = Mebibytes(64);
+  GameMemory.PermanentStorage = mmap(0,
+				     GameMemory.PermanentStorageSize,
+				     PROT_READ | PROT_WRITE,
+				     MAP_ANON | MAP_PRIVATE,
+				     -1,
+				     0);
+  
   
   bool32 Running = true;
   // NOTE(l4v): Main loop
@@ -667,7 +674,7 @@ int main(void)
       Buffer.Height = GlobalBackBuffer.Height;
       Buffer.Pitch = GlobalBackBuffer.Pitch;
       Buffer.BytesPerPixel = GlobalBackBuffer.BytesPerPixel;
-      GameUpdateAndRender(Input, &Buffer, &SoundBuffer);
+      GameUpdateAndRender(&GameMemory, Input, &Buffer, &SoundBuffer);
       
       SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite,
 			 &SoundBuffer);

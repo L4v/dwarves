@@ -1,5 +1,9 @@
 #ifndef DWARVES_H
 
+#define Kibibytes(Value) ((Value) * 1024LL)
+#define Mebibytes(Value) (Kibibytes(Value) * 1024LL)
+#define Gibibytes(Value) (Mebibytes(Value) * 1024LL)
+
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 // TODO(l4v): swap, min, max.... MACROS???
 
@@ -72,10 +76,24 @@ struct game_input
   game_controller_input Controllers[4];
 };
 
-internal void GameUpdateAndRender(game_input* Input,
+struct game_memory
+{
+  bool32 IsInitialized;
+  uint64 PermanentStorageSize;
+  void* PermanentStorage;
+};
+
+internal void GameUpdateAndRender(game_memory* Memory,
+				  game_input* Input,
 				  game_offscreen_buffer* Buffer,
 				  game_sound_output_buffer* SoundBuffer);
 
+struct game_state
+{
+  int32 ToneHz;
+  int32 BlueOffset;
+  int32 GreenOffset;
+};
 
 #define DWARVES_H
 #endif

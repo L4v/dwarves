@@ -17,6 +17,8 @@ stdint.h
 -
 cstddef
 -
+cstdio
+-
 math.h
 -
 dwarves.h
