@@ -25,6 +25,24 @@
 #define global_variable static
 #define local_persist static
 
+/*
+  NOTE(l4v): 
+  SLOW_BUILD:
+  0 - No slow code allowed
+  1 - Slow code allowed
+
+  INTERNAL:
+  0 - For public release
+  1 - For developers
+ */
+
+#if SLOW_BUILD
+#define Assert(Expression)			\
+  if(!(Expression)) {*(int*)0 = 0;}
+#else
+#define Assert(Expression)
+#endif
+
 #define MAX_CONTROLLERS 4
 #define Pi32 3.14159265359f
 
@@ -81,6 +99,16 @@ internal const char* LoadShader(const char* path)
     }
   return shaderText;
 }
+
+internal void* DEBUGPlatformReadEntireFile(char* Filename)
+{}
+internal void DEBUGPlatformFreeFileMemory(void* Memory)
+{}
+
+internal bool32 DEBUGPlatformWriteEntireFile(char* Filename,
+					    uint32 MemorySize,
+					    void* Memory)
+{}
 
 internal void
 SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock,
@@ -338,7 +366,7 @@ int main(void)
 	      | SDL_INIT_HAPTIC
 	      | SDL_INIT_AUDIO) > 0)
     {
-
+      printf("Failed to initialize SDL!\n");
       return 1;
     }
   
@@ -353,7 +381,7 @@ int main(void)
 
   if(!Window)
     {
-
+      printf("Failed to init SDL Window!\n");
       return 1;
     }
 
@@ -361,7 +389,7 @@ int main(void)
 
   if(!GLContext)
     {
-
+      printf("Failed to get GLContext!\n");
       return 1;
     }
 
@@ -515,202 +543,221 @@ int main(void)
   game_input* OldInput = &Input[1];
 
   game_memory GameMemory = {};
+
+#if INTERNAL
+  void* BaseAddress = (void*) 0;
+#else
+  void* BaseAddress = (void*) Gibibytes(250);
+#endif
+  
   GameMemory.PermanentStorageSize = Mebibytes(64);
-  GameMemory.PermanentStorage = mmap(0,
-				     GameMemory.PermanentStorageSize,
+  GameMemory.TransientStorageSize = Gibibytes(4);
+  uint64 TotalStorageSize = GameMemory.PermanentStorageSize
+    + GameMemory.TransientStorageSize;
+  
+  GameMemory.PermanentStorage = mmap(BaseAddress,
+				     TotalStorageSize,
 				     PROT_READ | PROT_WRITE,
 				     MAP_ANON | MAP_PRIVATE,
 				     -1,
 				     0);
+  GameMemory.TransientStorage = ((uint8*)GameMemory.PermanentStorage
+				 + GameMemory.PermanentStorageSize);
   
-  
-  bool32 Running = true;
-  // NOTE(l4v): Main loop
-  while(Running)
+  if(Samples && GameMemory.PermanentStorage && GameMemory.TransientStorage)
     {
+      bool32 Running = true;
+      // NOTE(l4v): Main loop
+      while(Running)
+	{
 
       
-      SDL_Event Event;
-      while(SDL_PollEvent(&Event))
-	{
-	  if(SDLHandleEvent(&Event))
-	    Running = false;
-	}
-      
-      // NOTE(l4v): Controller input
-      int MaxControllerCount = MAX_CONTROLLERS;
-      if(MaxControllerCount > ArrayCount(NewInput->Controllers))
-	{
-	  MaxControllerCount = ArrayCount(NewInput->Controllers);
-	}
-      for(int32 ControllerIndex = 0;
-	  ControllerIndex < MaxControllerCount;
-	  ++ControllerIndex)
-	{
-	  if(ControllerHandles[ControllerIndex] != 0
-	     && SDL_GameControllerGetAttached(ControllerHandles[ControllerIndex]))
+	  SDL_Event Event;
+	  while(SDL_PollEvent(&Event))
 	    {
-	      game_controller_input *OldController = &OldInput->Controllers[ControllerIndex];
-	      game_controller_input *NewController = &NewInput->Controllers[ControllerIndex];
-	      // TODO(l4v): Handle deadzones
-	      
-	      // NOTE(l4v): We have a controller with index ControllerIndex.
-
-	      // TODO(l4v): DPad
-	      bool32 Up = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_UP);
-	      bool32 Down = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_DOWN);
-	      bool32 Left = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-	      bool32 Right = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
-	      
-	      int16 StickX = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTX);
-	      int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTY);
-
-	      NewController->StartX = OldController->EndX;
-	      NewController->StartY = OldController->EndY;
-	      
-	      // NOTE(l4v): Normalizing the value
-	      if(StickX < 0)
+	      if(SDLHandleEvent(&Event))
+		Running = false;
+	    }
+      
+	  // NOTE(l4v): Controller input
+	  int MaxControllerCount = MAX_CONTROLLERS;
+	  if(MaxControllerCount > ArrayCount(NewInput->Controllers))
+	    {
+	      MaxControllerCount = ArrayCount(NewInput->Controllers);
+	    }
+	  for(int32 ControllerIndex = 0;
+	      ControllerIndex < MaxControllerCount;
+	      ++ControllerIndex)
+	    {
+	      if(ControllerHandles[ControllerIndex] != 0
+		 && SDL_GameControllerGetAttached(ControllerHandles[ControllerIndex]))
 		{
-		  NewController->EndX = StickX / 32768.0f;
+		  game_controller_input *OldController = &OldInput->Controllers[ControllerIndex];
+		  game_controller_input *NewController = &NewInput->Controllers[ControllerIndex];
+		  // TODO(l4v): Handle deadzones
+	      
+		  // NOTE(l4v): We have a controller with index ControllerIndex.
+
+		  // TODO(l4v): DPad
+		  bool32 Up = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_UP);
+		  bool32 Down = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+		  bool32 Left = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+		  bool32 Right = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+	      
+		  int16 StickX = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTX);
+		  int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTY);
+
+		  NewController->StartX = OldController->EndX;
+		  NewController->StartY = OldController->EndY;
+	      
+		  // NOTE(l4v): Normalizing the value
+		  if(StickX < 0)
+		    {
+		      NewController->EndX = StickX / 32768.0f;
+		    }
+		  else
+		    {
+		      NewController->EndX = StickX / 32767.0;
+		    }
+
+		  NewController->StartX = OldController->EndX;
+		  NewController->StartY = OldController->EndY;
+
+		  // TODO(l4v): Min / max macros
+		  // TODO(l4v): Collapse to single function
+		  NewController->MinX = NewController->MaxX =
+		    NewController->EndX;
+	      
+		  if(StickY < 0)
+		    {
+		      NewController->EndY = StickY / 32768.0f;
+		    }
+		  else
+		    {
+		      NewController->EndY = StickY / 32767.0;
+		    }
+		  NewController->MinX = NewController->MaxX =
+		    NewController->EndX;
+	      
+		  SDLProcessGameControllerButton(&(OldController->Down),
+						 &(NewController->Down),
+						 ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_A);
+		  SDLProcessGameControllerButton(&(OldController->Right),
+						 &(NewController->Right),
+						 ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_B);
+		  SDLProcessGameControllerButton(&(OldController->Left),
+						 &(NewController->Left),
+						 ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_X);
+		  SDLProcessGameControllerButton(&(OldController->Up),
+						 &(NewController->Up),
+						 ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_Y);
+		  SDLProcessGameControllerButton(&(OldController->LeftShoulder),
+						 &(NewController->LeftShoulder),
+						 ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+		  SDLProcessGameControllerButton(&(OldController->RightShoulder),
+						 &(NewController->RightShoulder),
+						 ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+	      
+		  // bool32 Start = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_START);
+		  // bool32 Back = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_BACK);
+	      
+		  // bool32 LeftShoulder = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+		  // bool32 RightShoulder = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+	      
+		  // bool32 AButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_A);
+		  // bool32 BButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_B);
+		  // bool32 XButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_X);
+		  // bool32 YButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_Y);
+
 		}
 	      else
 		{
-		  NewController->EndX = StickX / 32767.0;
+		  // TODO(l4v): This controller is note plugged in.
 		}
-
-	      NewController->StartX = OldController->EndX;
-	      NewController->StartY = OldController->EndY;
-
-	      // TODO(l4v): Min / max macros
-	      // TODO(l4v): Collapse to single function
-	      NewController->MinX = NewController->MaxX =
-		NewController->EndX;
-	      
-	      if(StickY < 0)
-		{
-		  NewController->EndY = StickY / 32768.0f;
-		}
-	      else
-		{
-		  NewController->EndY = StickY / 32767.0;
-		}
-	      NewController->MinX = NewController->MaxX =
-		NewController->EndX;
-	      
-	      SDLProcessGameControllerButton(&(OldController->Down),
-					     &(NewController->Down),
-					     ControllerHandles[ControllerIndex],
-					     SDL_CONTROLLER_BUTTON_A);
-	      SDLProcessGameControllerButton(&(OldController->Right),
-					     &(NewController->Right),
-					     ControllerHandles[ControllerIndex],
-					     SDL_CONTROLLER_BUTTON_B);
-	      SDLProcessGameControllerButton(&(OldController->Left),
-					     &(NewController->Left),
-					     ControllerHandles[ControllerIndex],
-					     SDL_CONTROLLER_BUTTON_X);
-	      SDLProcessGameControllerButton(&(OldController->Up),
-					     &(NewController->Up),
-					     ControllerHandles[ControllerIndex],
-					     SDL_CONTROLLER_BUTTON_Y);
-	      SDLProcessGameControllerButton(&(OldController->LeftShoulder),
-					     &(NewController->LeftShoulder),
-					     ControllerHandles[ControllerIndex],
-					     SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-	      SDLProcessGameControllerButton(&(OldController->RightShoulder),
-					     &(NewController->RightShoulder),
-					     ControllerHandles[ControllerIndex],
-					     SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-	      
-	      // bool32 Start = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_START);
-	      // bool32 Back = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_BACK);
-	      
-	      // bool32 LeftShoulder = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-	      // bool32 RightShoulder = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-	      
-	      // bool32 AButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_A);
-	      // bool32 BButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_B);
-	      // bool32 XButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_X);
-	      // bool32 YButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_Y);
-
+	    }
+      
+	  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GlobalBackBuffer.Width, GlobalBackBuffer.Height,
+		       0, GL_RGBA, GL_UNSIGNED_BYTE, GlobalBackBuffer.Memory);
+	  glGenerateMipmap(GL_TEXTURE_2D);
+      
+	  SDL_LockAudio();
+	  int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) % SoundOutput.SecondaryBufferSize;
+	  int32 TargetCursor =
+	    ((AudioRingBuffer.PlayCursor +
+	      (SoundOutput.LatencySampleCount * SoundOutput.BytesPerSample))
+	     % SoundOutput.SecondaryBufferSize);
+	  int32 BytesToWrite = 0;
+	  if(ByteToLock  > TargetCursor)
+	    {
+	      BytesToWrite = (SoundOutput.SecondaryBufferSize - ByteToLock);
+	      BytesToWrite += TargetCursor;
 	    }
 	  else
 	    {
-	      // TODO(l4v): This controller is note plugged in.
+	      BytesToWrite = TargetCursor - ByteToLock;
 	    }
+	  SDL_UnlockAudio();
+      
+	  game_sound_output_buffer SoundBuffer = {};
+	  SoundBuffer.SamplesPerSec = SoundOutput.SamplesPerSec;
+	  // NOTE(l4v): For 30fps
+	  SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;//SoundBuffer.SamplesPerSec / 15.0f;
+	  SoundBuffer.Samples = Samples;
+      
+	  game_offscreen_buffer Buffer = {};
+	  Buffer.Memory = GlobalBackBuffer.Memory;
+	  Buffer.Width = GlobalBackBuffer.Width;
+	  Buffer.Height = GlobalBackBuffer.Height;
+	  Buffer.Pitch = GlobalBackBuffer.Pitch;
+	  Buffer.BytesPerPixel = GlobalBackBuffer.BytesPerPixel;
+	  GameUpdateAndRender(&GameMemory, Input, &Buffer, &SoundBuffer);
+      
+	  SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite,
+			     &SoundBuffer);
+
+	  // NOTE(l4v): Testing drawing
+	  // --------------------------
+	  glClearColor(0.8f, 0.0f, 0.8f, 1.0f);
+	  glClear(GL_COLOR_BUFFER_BIT);
+
+	  glBindTexture(GL_TEXTURE_2D, texture);
+      
+	  glUseProgram(ShaderProgram);
+	  glBindVertexArray(VAO);
+	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+      
+	  SDL_GL_SwapWindow(Window);
+
+	  uint64 EndCycleCount = _rdtsc();
+	  uint64 EndCounter = SDL_GetPerformanceCounter();
+	  uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
+	  uint64 CounterElapsed = EndCounter - LastCounter;
+	  // NOTE(l4v): Milliseconds per frame
+	  uint64 MSPerFrame = ((1000 * CounterElapsed) / PerfCountFrequency);
+	  uint32 FPS = PerfCountFrequency / CounterElapsed;
+	  // NOTE(l4v): Mega cycles per frame
+	  uint32 MCPF = (uint32)CyclesElapsed / 1000000;
+
+	  LastCounter = EndCounter;
+	  LastCycleCount = EndCycleCount;
+
+	  game_input* Temp = NewInput;
+	  NewInput = OldInput;
+	  OldInput = Temp;
+	  // TODO(l4v): Should they be cleared?
 	}
-      
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GlobalBackBuffer.Width, GlobalBackBuffer.Height,
-		   0, GL_RGBA, GL_UNSIGNED_BYTE, GlobalBackBuffer.Memory);
-      glGenerateMipmap(GL_TEXTURE_2D);
-      
-      SDL_LockAudio();
-      int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) % SoundOutput.SecondaryBufferSize;
-      int32 TargetCursor =
-	((AudioRingBuffer.PlayCursor +
-	  (SoundOutput.LatencySampleCount * SoundOutput.BytesPerSample))
-	 % SoundOutput.SecondaryBufferSize);
-      int32 BytesToWrite = 0;
-      if(ByteToLock  > TargetCursor)
-	{
-	  BytesToWrite = (SoundOutput.SecondaryBufferSize - ByteToLock);
-	  BytesToWrite += TargetCursor;
-	}
-      else
-	{
-	  BytesToWrite = TargetCursor - ByteToLock;
-	}
-      SDL_UnlockAudio();
-      
-      game_sound_output_buffer SoundBuffer = {};
-      SoundBuffer.SamplesPerSec = SoundOutput.SamplesPerSec;
-      // NOTE(l4v): For 30fps
-      SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;//SoundBuffer.SamplesPerSec / 15.0f;
-      SoundBuffer.Samples = Samples;
-      
-      game_offscreen_buffer Buffer = {};
-      Buffer.Memory = GlobalBackBuffer.Memory;
-      Buffer.Width = GlobalBackBuffer.Width;
-      Buffer.Height = GlobalBackBuffer.Height;
-      Buffer.Pitch = GlobalBackBuffer.Pitch;
-      Buffer.BytesPerPixel = GlobalBackBuffer.BytesPerPixel;
-      GameUpdateAndRender(&GameMemory, Input, &Buffer, &SoundBuffer);
-      
-      SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite,
-			 &SoundBuffer);
-
-      // NOTE(l4v): Testing drawing
-      // --------------------------
-      glClearColor(0.8f, 0.0f, 0.8f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-
-      glBindTexture(GL_TEXTURE_2D, texture);
-      
-      glUseProgram(ShaderProgram);
-      glBindVertexArray(VAO);
-      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-      
-      SDL_GL_SwapWindow(Window);
-
-      uint64 EndCycleCount = _rdtsc();
-      uint64 EndCounter = SDL_GetPerformanceCounter();
-      uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
-      uint64 CounterElapsed = EndCounter - LastCounter;
-      // NOTE(l4v): Milliseconds per frame
-      uint64 MSPerFrame = ((1000 * CounterElapsed) / PerfCountFrequency);
-      uint32 FPS = PerfCountFrequency / CounterElapsed;
-      // NOTE(l4v): Mega cycles per frame
-      uint32 MCPF = (uint32)CyclesElapsed / 1000000;
-
-      LastCounter = EndCounter;
-      LastCycleCount = EndCycleCount;
-
-      game_input* Temp = NewInput;
-      NewInput = OldInput;
-      OldInput = Temp;
-      // TODO(l4v): Should they be cleared?
     }
-
+  else
+    {
+      // NOTE(l4v): Logging
+      printf("Memory allocation failed!\n");
+    }
   // NOTE(l4v): On some Linux systems that don't use ALSA's dmix system
   // or PulseAudio, only one audio device can be open across the entire
   // system, thus to be safe, audio should be closed

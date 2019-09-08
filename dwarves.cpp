@@ -52,6 +52,7 @@ GameUpdateAndRender(game_memory* Memory,
 		    game_offscreen_buffer* Buffer,
 		    game_sound_output_buffer* SoundBuffer)
 {
+  Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
   game_state* GameState = (game_state*)Memory->PermanentStorage;
   if(!Memory->IsInitialized)
     {
@@ -59,6 +60,14 @@ GameUpdateAndRender(game_memory* Memory,
       GameState->BlueOffset = 0;
       GameState->GreenOffset = 0;
 
+      char* Filename = "test.bmp";
+
+      void* BitmapMemory = DEBUGPlatformReadEntireFile(Filename);
+      if(BitmapMemory)
+	{
+	  DEBUGPlatformFreeFileMemory(BitmapMemory);
+	}
+      
       // TODO(l4v): Maybe more appropriate for the platform layer
       Memory->IsInitialized = true;
     }

@@ -8,14 +8,21 @@
 // TODO(l4v): swap, min, max.... MACROS???
 
 /*
-  TODO(l4v): Services that the platform layer provides to the game
+  NOTE(l4v): Services that the platform layer provides to the game
  */
+#if INTERNAL_BUILD
+internal void* DEBUGPlatformReadEntireFile(char* Filename);
+internal void DEBUGPlatformFreeFileMemory(void* Memory);
+
+internal bool32 DEBUGPlatformWriteEntireFile(char* Filename,
+					     uint32 MemorySize,
+					     void* Memory);
+#endif
 
 /*
   NOTE(l4v): Services that the game provides to the platform layer
   (may expand in the future - sound on seperate thread, etc.)
  */
-
 // Timing, input, sound buffer to use
 
 struct game_sound_output_buffer
@@ -73,6 +80,7 @@ struct game_controller_input
 
 struct game_input
 {
+  // TODO(l4v): Insert clock value here
   game_controller_input Controllers[4];
 };
 
@@ -80,7 +88,11 @@ struct game_memory
 {
   bool32 IsInitialized;
   uint64 PermanentStorageSize;
+  // NOTE(l4v): REQUIRED to be cleared to 0
   void* PermanentStorage;
+  uint64 TransientStorageSize;
+  // NOTE(l4v): REQUIRED to be cleared to 0
+  void* TransientStorage;
 };
 
 internal void GameUpdateAndRender(game_memory* Memory,
