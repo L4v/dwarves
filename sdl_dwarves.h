@@ -1,6 +1,5 @@
 #ifndef SDL_DWARVES_H
 
-
 struct sdl_audio_ring_buffer
 {
   int32 Size;

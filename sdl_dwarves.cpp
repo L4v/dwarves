@@ -20,6 +20,11 @@
 #include <cstdio>
 // TODO(l4v): Implement own functions
 #include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 
 #define internal static
 #define global_variable static
@@ -100,14 +105,72 @@ internal const char* LoadShader(const char* path)
   return shaderText;
 }
 
-internal void* DEBUGPlatformReadEntireFile(char* Filename)
-{}
-internal void DEBUGPlatformFreeFileMemory(void* Memory)
-{}
+internal inline uint32
+SafeTruncateUInt64(uint64 Value)
+{
+  Assert(Value <= 0xFFFFFFFF);
+  uint32 Result = (uint32)Value;
+  return Result;
+}
 
-internal bool32 DEBUGPlatformWriteEntireFile(char* Filename,
-					    uint32 MemorySize,
-					    void* Memory)
+internal void*
+DEBUGPlatformReadEntireFile(char* Filename)
+{
+  void* Result = 0;
+  int32 FileHandle = open(Filename, O_RDONLY);
+  if(FileHandle == -1)
+    {
+      printf("DEBUGPlatformReadEntireFile failed to open!\n");
+      return Result;
+    }
+  struct stat FileStatus;
+  if(stat(Filename, &FileStatus) == -1)
+    {
+      printf("DEBUGPlatformReadEntireFile failed to get status!\n");
+      close(FileHandle);
+      return Result;
+    }
+
+  
+  uint32 FileSize = SafeTruncateUInt64(FileStatus.st_size);
+  Result = malloc(FileSize);
+  if(!Result)
+    {
+      printf("DEBUGPlatformReadEntireFile failed to allocate!\n");
+      close(FileHandle);
+      return Result;
+    }
+
+  uint32 BytesToRead = FileSize;
+  uint8* NextByteLocation = (uint8*)Result;
+  while(BytesToRead)
+    {
+      uint32 BytesRead = read(FileHandle, NextByteLocation, BytesToRead);
+      if(BytesRead == -1)
+	{
+	  printf("DEBUGPlatformReadEntireFile failed to read!\n");
+	  free(Result);
+	  Result = 0;
+	  close(FileHandle);
+	  return Result;
+	}
+      BytesToRead -= BytesRead;
+      NextByteLocation += BytesRead;
+    }
+  
+  close(FileHandle);
+  return Result;
+}
+internal void
+DEBUGPlatformFreeFileMemory(void* Memory)
+{
+  free(Memory);
+}
+
+internal bool32
+DEBUGPlatformWriteEntireFile(char* Filename,
+			     uint32 MemorySize,
+			     void* Memory)
 {}
 
 internal void
