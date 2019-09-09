@@ -84,7 +84,7 @@ GameUpdateAndRender(game_memory* Memory,
       // NOTE(l4v): Use analog movement
       // TODO(l4v): IsAnalog is not zeroed, so this can crash the game
       //GameState->ToneHz = 256 * (int32)(128.0f * (Input0->EndX));
-      GameState->BlueOffset += (int32)(4.0f * (Input0->EndY));
+      GameState->BlueOffset += (int32)(4.0f * (Input0->StickAverageY));
       printf("AAA %d", GameState->BlueOffset);
     }
   else
@@ -93,7 +93,7 @@ GameUpdateAndRender(game_memory* Memory,
       
     }
 
-  if(Input0->Down.EndedDown)
+  if(Input0->ActionDown.EndedDown)
     {
       GameState->GreenOffset--;
       printf("%d\n", GameState->GreenOffset);

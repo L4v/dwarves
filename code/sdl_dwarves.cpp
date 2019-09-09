@@ -269,16 +269,15 @@ internal real32
 SDLProcessGameControllerAxisValue(int16 Value, int16 DeadZoneTreshold)
 {
   real32 Result = 0;
-  if(Value < DeadZoneTreshold)
+  if(Value < -DeadZoneTreshold)
     {
-      Result = (real32)((Value + DeadZoneTreshold) /
-			(32768.0f - DeadZoneTreshold));
+      Result = (real32)Value / 32768.0f;
     }
-  else
+      else if(Value > DeadZoneTreshold)
     {
-      Result = (real32)((Value - DeadZoneTreshold) /
-			(32767.0f - DeadZoneTreshold));
+     Result = (real32)Value / 32767.0f;
     }
+  
   return Result;
 }
 
@@ -426,15 +425,23 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 	  {
 	    if(Keycode == SDLK_w)
 	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveUp,
+					     IsDown);
 	      }
 	    else if(Keycode == SDLK_a)
 	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveLeft,
+					     IsDown);
 	      }
 	    else if(Keycode == SDLK_s)
 	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveDown,
+					     IsDown);
 	      }
 	    else if(Keycode == SDLK_d)
 	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveRight,
+					     IsDown);
 	      }
 	    else if(Keycode == SDLK_q)
 	      {
@@ -448,22 +455,22 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 	      }
 	    else if(Keycode == SDLK_UP)
 	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->Up,
+		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionUp,
 					     IsDown);
 	      }
 	    else if(Keycode == SDLK_LEFT)
 	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->Left,
+		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionLeft,
 					     IsDown);
 	      }
 	    else if(Keycode == SDLK_DOWN)
 	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->Down,
+		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionDown,
 					     IsDown);
 	      }
 	    else if(Keycode == SDLK_RIGHT)
 	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->Right,
+		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionRight,
 					     IsDown);
 	      }
 	    else if(Keycode == SDLK_ESCAPE)
@@ -761,56 +768,31 @@ int main(void)
 		  int16 StickX = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTX);
 		  int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTY);
 
-		  NewController->StartX = OldController->EndX;
-		  NewController->StartY = OldController->EndY;
-		  NewController->EndX = 0;
-		  NewController->EndY = 0;
 	      
 		  // SDL_GAMEPAD_LEFT_THUMB_DEADZONE 7849
 		  // SDL_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
-		  // NOTE(l4v): Normalizing the value
-		  if(StickX < -SDL_GAMEPAD_LEFT_THUMB_DEADZONE)
-		    {
-		      NewController->EndX = (real32)StickX / 32768.0f;
-		    }
-		  else if (StickX > SDL_GAMEPAD_LEFT_THUMB_DEADZONE)
-		    {
-		      NewController->EndX = (real32)StickX / 32767.0;
-		    }
-
-		  NewController->StartX = OldController->EndX;
-		  NewController->StartY = OldController->EndY;
+		  // NOTE(l4v): Normalizing the value and checking for deadzone
+		  NewController->StickAverageX =
+		    SDLProcessGameControllerAxisValue(StickX, SDL_GAMEPAD_LEFT_THUMB_DEADZONE);
+		  NewController->StickAverageY =
+		    SDLProcessGameControllerAxisValue(StickX, SDL_GAMEPAD_LEFT_THUMB_DEADZONE);
 
 		  // TODO(l4v): Min / max macros
-		  // TODO(l4v): Collapse to single function
-		  NewController->MinX = NewController->MaxX =
-		    NewController->EndX;
-
-		  if(StickY < -SDL_GAMEPAD_LEFT_THUMB_DEADZONE)
-		    {
-		      NewController->EndY = (real32)StickY / 32768.0f;
-		    }
-		  else if(StickY > SDL_GAMEPAD_LEFT_THUMB_DEADZONE)
-		    {
-		      NewController->EndY = (real32)StickY / 32767.0;
-		    }
-		  NewController->MinY = NewController->MaxY =
-		    NewController->EndY;
 	      
-		  SDLProcessGameControllerButton(&(OldController->Down),
-						 &(NewController->Down),
+		  SDLProcessGameControllerButton(&(OldController->ActionDown),
+						 &(NewController->ActionDown),
 						 ControllerHandles[ControllerIndex],
 						 SDL_CONTROLLER_BUTTON_A);
-		  SDLProcessGameControllerButton(&(OldController->Right),
-						 &(NewController->Right),
+		  SDLProcessGameControllerButton(&(OldController->ActionRight),
+						 &(NewController->ActionRight),
 						 ControllerHandles[ControllerIndex],
 						 SDL_CONTROLLER_BUTTON_B);
-		  SDLProcessGameControllerButton(&(OldController->Left),
-						 &(NewController->Left),
+		  SDLProcessGameControllerButton(&(OldController->ActionLeft),
+						 &(NewController->ActionLeft),
 						 ControllerHandles[ControllerIndex],
 						 SDL_CONTROLLER_BUTTON_X);
-		  SDLProcessGameControllerButton(&(OldController->Up),
-						 &(NewController->Up),
+		  SDLProcessGameControllerButton(&(OldController->ActionUp),
+						 &(NewController->ActionUp),
 						 ControllerHandles[ControllerIndex],
 						 SDL_CONTROLLER_BUTTON_Y);
 		  SDLProcessGameControllerButton(&(OldController->LeftShoulder),
@@ -821,6 +803,16 @@ int main(void)
 						 &(NewController->RightShoulder),
 						 ControllerHandles[ControllerIndex],
 						 SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+
+		  
+		  SDLProcessGameControllerButton(&(OldController->Start),
+						 &(NewController->Start),
+						 ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_START);
+		  SDLProcessGameControllerButton(&(OldController->Back),
+						 &(NewController->Back),
+						 ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_BACK);
 	      
 		  // bool32 Start = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_START);
 		  // bool32 Back = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_BACK);
@@ -836,7 +828,7 @@ int main(void)
 		}
 	      else
 		{
-		  // TODO(l4v): This controller is note plugged in.
+		  // TODO(l4v): This controller is not plugged in.
 		}
 	    }
       
