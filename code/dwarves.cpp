@@ -7,6 +7,8 @@ GameOutputSound(game_sound_output_buffer* SoundBuffer, int32 ToneHz)
   int16 ToneVolume = 3000;
   int32 WavePeriod = SoundBuffer->SamplesPerSec / ToneHz;
 
+  printf("Hz: %i\n", ToneHz);
+  
   int16 *Samples = SoundBuffer->Samples;
   for(int32 SampleIndex = 0;
       SampleIndex < SoundBuffer->SampleCount;
@@ -83,6 +85,7 @@ GameUpdateAndRender(game_memory* Memory,
       // TODO(l4v): IsAnalog is not zeroed, so this can crash the game
       //GameState->ToneHz = 256 * (int32)(128.0f * (Input0->EndX));
       GameState->BlueOffset += (int32)(4.0f * (Input0->EndY));
+      printf("AAA %d", GameState->BlueOffset);
     }
   else
     {
@@ -92,7 +95,8 @@ GameUpdateAndRender(game_memory* Memory,
 
   if(Input0->Down.EndedDown)
     {
-      GameState->BlueOffset++;
+      GameState->GreenOffset--;
+      printf("%d\n", GameState->GreenOffset);
     }
 
   // NOTE(l4v): So as not to cause a crash

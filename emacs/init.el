@@ -47,3 +47,11 @@
 (modify-face 'font-lock-note-face "Dark Green" nil nil t nil t nil nil)
 (modify-face 'font-lock-important-face "Orange" nil nil t nil t nil nil)
 (modify-face 'font-lock-study-face "Orange" nil nil t nil t nil nil)
+
+;; Disable toolbar
+(tool-bar-mode 0)
+
+;; Find .h / .cpp equivalent of file using C-c o
+(add-hook 'c-mode-common-hook
+  (lambda() 
+    (local-set-key  (kbd "C-c o") 'ff-find-other-file)))

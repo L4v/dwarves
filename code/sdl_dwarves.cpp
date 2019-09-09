@@ -255,6 +255,15 @@ SDLProcessGameControllerButton(game_button_state* OldState,
 }
 
 internal void
+SDLProcessGameKeyboardButton(game_button_state* NewState,
+			     bool32 IsDown)
+{
+  Assert(NewState->EndedDown != IsDown);
+  NewState->EndedDown = IsDown;
+  ++NewState->HalfTransitionCount;
+}
+
+internal void
 SDLWindowResize(sdl_offscreen_buffer* Buffer, int32 Width, int32 Height)
 {
   // Buffer->BytesPerPixel = 4;
@@ -349,7 +358,7 @@ SDLInitAudio(int32 SamplesPerSec, int32 BufferSize)
     }
 }
 internal bool32
-SDLHandleEvent(SDL_Event* Event)
+SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 {
   bool32 ShouldQuit = false;
 
@@ -410,21 +419,33 @@ SDLHandleEvent(SDL_Event* Event)
 	      }
 	    else if(Keycode == SDLK_q)
 	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->LeftShoulder,
+					     IsDown);
 	      }
 	    else if(Keycode == SDLK_e)
 	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->RightShoulder,
+					     IsDown);
 	      }
 	    else if(Keycode == SDLK_UP)
 	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->Up,
+					     IsDown);
 	      }
 	    else if(Keycode == SDLK_LEFT)
 	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->Left,
+					     IsDown);
 	      }
 	    else if(Keycode == SDLK_DOWN)
 	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->Down,
+					     IsDown);
 	      }
 	    else if(Keycode == SDLK_RIGHT)
 	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->Right,
+					     IsDown);
 	      }
 	    else if(Keycode == SDLK_ESCAPE)
 	      {
@@ -642,6 +663,9 @@ int main(void)
   game_input* NewInput = &Input[0];
   game_input* OldInput = &Input[1];
 
+  *NewInput = {};
+  *OldInput = {};
+
   game_memory GameMemory = {};
 
 #if INTERNAL
@@ -671,11 +695,22 @@ int main(void)
       while(Running)
 	{
 
+	  game_controller_input* OldKeyboardController = &OldInput->Controllers[0];
+	  game_controller_input* NewKeyboardController = &NewInput->Controllers[0];
+	  *NewKeyboardController = {};
+
+	  for(uint32 ButtonIndex = 0;
+	      ButtonIndex < ArrayCount(NewKeyboardController->Buttons);
+	      ++ButtonIndex)
+	    {
+	      NewKeyboardController->Buttons[ButtonIndex].EndedDown =
+		OldKeyboardController->Buttons[ButtonIndex].EndedDown;
+	    }
       
 	  SDL_Event Event;
 	  while(SDL_PollEvent(&Event))
 	    {
-	      if(SDLHandleEvent(&Event))
+	      if(SDLHandleEvent(&Event, NewKeyboardController))
 		Running = false;
 	    }
       
@@ -692,8 +727,8 @@ int main(void)
 	      if(ControllerHandles[ControllerIndex] != 0
 		 && SDL_GameControllerGetAttached(ControllerHandles[ControllerIndex]))
 		{
-		  game_controller_input *OldController = &OldInput->Controllers[ControllerIndex];
-		  game_controller_input *NewController = &NewInput->Controllers[ControllerIndex];
+		  game_controller_input *OldController = &OldInput->Controllers[ControllerIndex+1];
+		  game_controller_input *NewController = &NewInput->Controllers[ControllerIndex+1];
 		  // TODO(l4v): Handle deadzones
 	      
 		  // NOTE(l4v): We have a controller with index ControllerIndex.
