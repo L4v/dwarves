@@ -51,6 +51,8 @@
 
 #define MAX_CONTROLLERS 4
 #define Pi32 3.14159265359f
+#define SDL_GAMEPAD_LEFT_THUMB_DEADZONE 7849
+#define SDL_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
 
 typedef int8_t int8;
 typedef int16_t int16;
@@ -261,6 +263,23 @@ SDLProcessGameKeyboardButton(game_button_state* NewState,
   Assert(NewState->EndedDown != IsDown);
   NewState->EndedDown = IsDown;
   ++NewState->HalfTransitionCount;
+}
+
+internal real32
+SDLProcessGameControllerAxisValue(int16 Value, int16 DeadZoneTreshold)
+{
+  real32 Result = 0;
+  if(Value < DeadZoneTreshold)
+    {
+      Result = (real32)((Value + DeadZoneTreshold) /
+			(32768.0f - DeadZoneTreshold));
+    }
+  else
+    {
+      Result = (real32)((Value - DeadZoneTreshold) /
+			(32767.0f - DeadZoneTreshold));
+    }
+  return Result;
 }
 
 internal void
@@ -744,15 +763,19 @@ int main(void)
 
 		  NewController->StartX = OldController->EndX;
 		  NewController->StartY = OldController->EndY;
+		  NewController->EndX = 0;
+		  NewController->EndY = 0;
 	      
+		  // SDL_GAMEPAD_LEFT_THUMB_DEADZONE 7849
+		  // SDL_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
 		  // NOTE(l4v): Normalizing the value
-		  if(StickX < 0)
+		  if(StickX < -SDL_GAMEPAD_LEFT_THUMB_DEADZONE)
 		    {
-		      NewController->EndX = StickX / 32768.0f;
+		      NewController->EndX = (real32)StickX / 32768.0f;
 		    }
-		  else
+		  else if (StickX > SDL_GAMEPAD_LEFT_THUMB_DEADZONE)
 		    {
-		      NewController->EndX = StickX / 32767.0;
+		      NewController->EndX = (real32)StickX / 32767.0;
 		    }
 
 		  NewController->StartX = OldController->EndX;
@@ -762,17 +785,17 @@ int main(void)
 		  // TODO(l4v): Collapse to single function
 		  NewController->MinX = NewController->MaxX =
 		    NewController->EndX;
-	      
-		  if(StickY < 0)
+
+		  if(StickY < -SDL_GAMEPAD_LEFT_THUMB_DEADZONE)
 		    {
-		      NewController->EndY = StickY / 32768.0f;
+		      NewController->EndY = (real32)StickY / 32768.0f;
 		    }
-		  else
+		  else if(StickY > SDL_GAMEPAD_LEFT_THUMB_DEADZONE)
 		    {
-		      NewController->EndY = StickY / 32767.0;
+		      NewController->EndY = (real32)StickY / 32767.0;
 		    }
-		  NewController->MinX = NewController->MaxX =
-		    NewController->EndX;
+		  NewController->MinY = NewController->MaxY =
+		    NewController->EndY;
 	      
 		  SDLProcessGameControllerButton(&(OldController->Down),
 						 &(NewController->Down),
