@@ -1,0 +1,4 @@
+(
+ (:id "sha1:4158b124e1e8d2d100f3297176fcf240ba85542a" :fingerprint "sha1:8a:24:16:cb:86:21:fc:7c:fa:e3:29:4c:4e:87:63:2e:12:82:23:7e" :host "melpa.milkbox.net:443" :conditions (:no-host-match))
+ (:id "sha1:85457c729378cc93c732b6a3941c8e4f9c2e60f3" :fingerprint "sha1:ab:a6:d7:6a:b3:d3:63:fa:19:0d:65:41:60:23:6e:ef:d3:2a:46:dc" :host "marmalade-repo.org:443" :conditions (:expired :unknown-ca :invalid))
+)

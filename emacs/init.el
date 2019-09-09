@@ -1,8 +1,13 @@
+(setq user-init-file (or load-file-name (buffer-file-name)))
+(setq user-emacs-directory (file-name-directory user-init-file))
+
+(package-initialize)
+
 (require 'package)
 (add-to-list 'package-archives
 	     '("marmalade" .
 	       "https://marmalade-repo.org/packages/"))
-(package-initialize)
+
 
 (when (>= emacs-major-version 24)
   (require 'package)
@@ -10,22 +15,34 @@
    'package-archives
    '("melpa" . "https://melpa.milkbox.net/packages/")
    t))
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages (quote (drag-stuff))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
 
-(drag-stuff-global-mode 1)
-(when (version<= "26.0.50" emacs-version )
-  (global-display-line-numbers-mode))
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+
+;; ;; Bootstrap `use-package'
+;; ;; http://www.lunaryorn.com/2015/01/06/my-emacs-configuration-with-use-package.html
+;; ;; use-package autoloads will make sure it get pulled in at the right time
+;; ;; read "package autoloads":  http://www.lunaryorn.com/2014/07/02/autoloads-in-emacs-lisp.html
+;; (unless (package-installed-p 'use-package)
+;;   (package-refresh-contents)
+;;   (package-install 'use-package))
+
+;; (custom-set-variables
+;;  ;; custom-set-variables was added by Custom.
+;;  ;; If you edit it by hand, you could mess it up, so be careful.
+;;  ;; Your init file should contain only one such instance.
+;;  ;; If there is more than one, they won't work right.
+;;  '(package-selected-packages (quote (use-package))))
+;; (custom-set-faces
+;;  ;; custom-set-faces was added by Custom.
+;;  ;; If you edit it by hand, you could mess it up, so be careful.
+;;  ;; Your init file should contain only one such instance.
+;;  ;; If there is more than one, they won't work right.
+;;  )
+
+;; (drag-stuff-global-mode 1)
+;; (when (version<= "26.0.50" emacs-version )
+;;   (global-display-line-numbers-mode))
 
 (set-face-attribute 'region nil :background "#666" :foreground "#ffffff")
 
@@ -52,9 +69,7 @@
 (tool-bar-mode 0)
 
 ;; Find .h / .cpp equivalent of file using C-c o
-(add-hook 'c-mode-common-hook
-  (lambda() 
-    (local-set-key  (kbd "C-c o") 'ff-find-other-file)))
+(global-set-key  (kbd "<C-tab>") 'ff-find-other-file)
 
 ;; Run compile script
 (setq compile-command "./build.sh")
