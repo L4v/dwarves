@@ -60,12 +60,13 @@ GameUpdateAndRender(game_memory* Memory,
       GameState->BlueOffset = 0;
       GameState->GreenOffset = 0;
 
-      char* Filename = __FILE__;
+      char Filename[32] = "../code/";
+      strcat(Filename, __FILE__);
 
       debug_read_file_result BitmapMemory = DEBUGPlatformReadEntireFile(Filename);
       if(BitmapMemory.Contents)
 	{
-	  DEBUGPlatformWriteEntireFile("test.out", BitmapMemory.ContentsSize, BitmapMemory.Contents);
+	  DEBUGPlatformWriteEntireFile("../data/test.out", BitmapMemory.ContentsSize, BitmapMemory.Contents);
 	  DEBUGPlatformFreeFileMemory(BitmapMemory.Contents);
 	}
       

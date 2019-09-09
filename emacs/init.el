@@ -45,5 +45,5 @@
       fixme-modes)
 (modify-face 'font-lock-fixme-face "Red" nil nil t nil t nil nil)
 (modify-face 'font-lock-note-face "Dark Green" nil nil t nil t nil nil)
-(modify-face 'font-lock-important-face "Yellow" nil nil t nil t nil nil)
-(modify-face 'font-lock-study-face "Yellow" nil nil t nil t nil nil)
+(modify-face 'font-lock-important-face "Orange" nil nil t nil t nil nil)
+(modify-face 'font-lock-study-face "Orange" nil nil t nil t nil nil)

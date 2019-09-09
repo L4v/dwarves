@@ -18,7 +18,11 @@ SafeTruncateUInt64(uint64 Value)
   NOTE(l4v): Services that the platform layer provides to the game
  */
 #if INTERNAL_BUILD
-/*
+/* IMPORTANT(l4v):
+   
+   These are not for doing anything in the shipping game - 
+   they are blocking and the write isn't protected against
+   data loss!
   
  */
 struct debug_read_file_result

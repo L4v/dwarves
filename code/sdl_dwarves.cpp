@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <cstddef>
 #include <cstdio>
+#include <cstring>
 // TODO(l4v): Implement own functions
 #include <math.h>
 #include <sys/types.h>
@@ -139,11 +140,11 @@ DEBUGPlatformReadEntireFile(char* Filename)
       return Result;
     }
 
-  uint32 BytesToRead = Result.ContentsSize;
+  ssize_t BytesToRead = Result.ContentsSize;
   uint8* NextByteLocation = (uint8*)Result.Contents;
   while(BytesToRead)
     {
-      uint32 BytesRead = read(FileHandle, NextByteLocation, BytesToRead);
+      ssize_t BytesRead = read(FileHandle, NextByteLocation, BytesToRead);
       if(BytesRead == -1)
 	{
 	  printf("DEBUGPlatformReadEntireFile failed to read!\n");
@@ -186,7 +187,7 @@ DEBUGPlatformWriteEntireFile(char* Filename,
   uint8* NextByteLocation = (uint8*)Memory;
   while(BytesToWrite)
     {
-      uint32 BytesWritten = write(FileHandle, NextByteLocation, BytesToWrite);
+      ssize_t BytesWritten = write(FileHandle, NextByteLocation, BytesToWrite);
       if(BytesWritten == -1)
 	{
 	  printf("DEBUGPlatformWriteEntireFile failed to write!\n");
@@ -382,7 +383,7 @@ SDLHandleEvent(SDL_Event* Event)
       {
 	SDL_Keycode Keycode = Event->key.keysym.sym;
 	bool32 IsDown = (Event->key.state == SDL_PRESSED);
-	bool32 WasDown = false;
+	bool32 WasDown;
 
 	if(Event->key.state == SDL_RELEASED)
 	  {
@@ -427,6 +428,14 @@ SDLHandleEvent(SDL_Event* Event)
 	      }
 	    else if(Keycode == SDLK_ESCAPE)
 	      {
+		if(IsDown)
+		  {
+
+		  }
+		if(WasDown)
+		  {
+		    
+		  }
 		ShouldQuit = true;
 	      }
 	    else if(Keycode == SDLK_SPACE)
@@ -446,7 +455,6 @@ int main(void)
 
   SDL_Window* Window = 0;
   SDL_GLContext GLContext;
-  bool32 quit = false;
 
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -526,8 +534,8 @@ int main(void)
   uint64 LastCycleCount = _rdtsc();
   uint64 PerfCountFrequency = SDL_GetPerformanceFrequency();
 
-  const char* VertexShaderSource = LoadShader("shaders/triangle.vs");
-  const char* FragmentShaderSource = LoadShader("shaders/triangle.fs");
+  const char* VertexShaderSource = LoadShader("../shaders/triangle.vs");
+  const char* FragmentShaderSource = LoadShader("../shaders/triangle.fs");
   uint32 VertexShader;
   VertexShader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(VertexShader, 1, &VertexShaderSource, 0);
@@ -672,12 +680,12 @@ int main(void)
 	    }
       
 	  // NOTE(l4v): Controller input
-	  int MaxControllerCount = MAX_CONTROLLERS;
+	  uint32 MaxControllerCount = MAX_CONTROLLERS;
 	  if(MaxControllerCount > ArrayCount(NewInput->Controllers))
 	    {
 	      MaxControllerCount = ArrayCount(NewInput->Controllers);
 	    }
-	  for(int32 ControllerIndex = 0;
+	  for(uint32 ControllerIndex = 0;
 	      ControllerIndex < MaxControllerCount;
 	      ++ControllerIndex)
 	    {
