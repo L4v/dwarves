@@ -60,12 +60,13 @@ GameUpdateAndRender(game_memory* Memory,
       GameState->BlueOffset = 0;
       GameState->GreenOffset = 0;
 
-      char* Filename = "test.bmp";
+      char* Filename = __FILE__;
 
-      void* BitmapMemory = DEBUGPlatformReadEntireFile(Filename);
-      if(BitmapMemory)
+      debug_read_file_result BitmapMemory = DEBUGPlatformReadEntireFile(Filename);
+      if(BitmapMemory.Contents)
 	{
-	  DEBUGPlatformFreeFileMemory(BitmapMemory);
+	  DEBUGPlatformWriteEntireFile("test.out", BitmapMemory.ContentsSize, BitmapMemory.Contents);
+	  DEBUGPlatformFreeFileMemory(BitmapMemory.Contents);
 	}
       
       // TODO(l4v): Maybe more appropriate for the platform layer

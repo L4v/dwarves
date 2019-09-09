@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o"
-  "dwarves"
-  "dwarves.pdb"
+  "CMakeFiles/dwarves.dir/code/sdl_dwarves.cpp.o"
+  "build/dwarves"
+  "build/dwarves.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

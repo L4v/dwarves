@@ -105,18 +105,12 @@ internal const char* LoadShader(const char* path)
   return shaderText;
 }
 
-internal inline uint32
-SafeTruncateUInt64(uint64 Value)
-{
-  Assert(Value <= 0xFFFFFFFF);
-  uint32 Result = (uint32)Value;
-  return Result;
-}
-
-internal void*
+internal debug_read_file_result
 DEBUGPlatformReadEntireFile(char* Filename)
 {
-  void* Result = 0;
+  debug_read_file_result Result = {};
+  // NOTE(l4v): Use O_CREATE flag to create a non existant
+  // file
   int32 FileHandle = open(Filename, O_RDONLY);
   if(FileHandle == -1)
     {
@@ -131,26 +125,31 @@ DEBUGPlatformReadEntireFile(char* Filename)
       return Result;
     }
 
+  // NOTE(l4v): File sizes limited to 4GB
+  Result.ContentsSize = SafeTruncateUInt64(FileStatus.st_size);
   
-  uint32 FileSize = SafeTruncateUInt64(FileStatus.st_size);
-  Result = malloc(FileSize);
-  if(!Result)
+  Result.Contents = malloc(Result.ContentsSize);
+  if(!Result.Contents)
     {
       printf("DEBUGPlatformReadEntireFile failed to allocate!\n");
+      free(Result.Contents);
+      Result.Contents = 0;
+      Result.ContentsSize = 0;
       close(FileHandle);
       return Result;
     }
 
-  uint32 BytesToRead = FileSize;
-  uint8* NextByteLocation = (uint8*)Result;
+  uint32 BytesToRead = Result.ContentsSize;
+  uint8* NextByteLocation = (uint8*)Result.Contents;
   while(BytesToRead)
     {
       uint32 BytesRead = read(FileHandle, NextByteLocation, BytesToRead);
       if(BytesRead == -1)
 	{
 	  printf("DEBUGPlatformReadEntireFile failed to read!\n");
-	  free(Result);
-	  Result = 0;
+	  free(Result.Contents);
+	  Result.Contents = 0;
+	  Result.ContentsSize = 0;
 	  close(FileHandle);
 	  return Result;
 	}
@@ -164,14 +163,44 @@ DEBUGPlatformReadEntireFile(char* Filename)
 internal void
 DEBUGPlatformFreeFileMemory(void* Memory)
 {
-  free(Memory);
+  if(Memory)
+    {
+      free(Memory);
+    }
 }
 
 internal bool32
 DEBUGPlatformWriteEntireFile(char* Filename,
 			     uint32 MemorySize,
 			     void* Memory)
-{}
+{
+  int32 FileHandle = open(Filename, O_WRONLY | O_CREAT, S_IRUSR |
+			  S_IWUSR | S_IRGRP | S_IROTH);
+
+  if(FileHandle == -1)
+    {
+      printf("DEBUGPlatformWriteEntireFile failed to open file!\n");
+      return 0;
+    }
+  uint32 BytesToWrite = MemorySize;
+  uint8* NextByteLocation = (uint8*)Memory;
+  while(BytesToWrite)
+    {
+      uint32 BytesWritten = write(FileHandle, NextByteLocation, BytesToWrite);
+      if(BytesWritten == -1)
+	{
+	  printf("DEBUGPlatformWriteEntireFile failed to write!\n");
+	  close(FileHandle);
+	  return 0;
+	}
+      BytesToWrite -= BytesWritten;
+      NextByteLocation += BytesWritten;
+    }
+
+  close(FileHandle);
+
+  return true;
+}
 
 internal void
 SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock,
@@ -497,8 +526,8 @@ int main(void)
   uint64 LastCycleCount = _rdtsc();
   uint64 PerfCountFrequency = SDL_GetPerformanceFrequency();
 
-  const char* VertexShaderSource = LoadShader("triangle.vs");
-  const char* FragmentShaderSource = LoadShader("triangle.fs");
+  const char* VertexShaderSource = LoadShader("shaders/triangle.vs");
+  const char* FragmentShaderSource = LoadShader("shaders/triangle.fs");
   uint32 VertexShader;
   VertexShader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(VertexShader, 1, &VertexShaderSource, 0);

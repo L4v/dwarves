@@ -1,1 +1,1 @@
-/usr/bin/c++  -g  -rdynamic CMakeFiles/dwarves.dir/sdl_dwarves.cpp.o  -o dwarves -lGL -lGLU -lSDL2 /usr/lib/libGLEW.so 
+/usr/bin/c++  -g -DSLOW_BUILD=1 -DINTERNAL_BUILD=1  -rdynamic CMakeFiles/dwarves.dir/code/sdl_dwarves.cpp.o  -o build/dwarves -lGL -lGLU -lSDL2 /usr/lib/libGLEW.so 
