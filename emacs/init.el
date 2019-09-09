@@ -55,3 +55,7 @@
 (add-hook 'c-mode-common-hook
   (lambda() 
     (local-set-key  (kbd "C-c o") 'ff-find-other-file)))
+
+;; Run compile script
+(setq compile-command "./build.sh")
+(global-set-key (kbd "<f5>") 'compile)
