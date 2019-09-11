@@ -86,7 +86,8 @@ SDL_Haptic* RumbleHandles[MAX_CONTROLLERS];
 global_variable sdl_audio_ring_buffer AudioRingBuffer;
 global_variable sdl_offscreen_buffer GlobalBackBuffer;
 
-internal const char* LoadShader(const char* path)
+internal const char*
+LoadShader(const char* path)
 {
   char* shaderText = 0;
   int64 length;
@@ -284,22 +285,7 @@ SDLProcessGameControllerAxisValue(int16 Value, int16 DeadZoneTreshold)
 internal void
 SDLWindowResize(sdl_offscreen_buffer* Buffer, int32 Width, int32 Height)
 {
-  // Buffer->BytesPerPixel = 4;
-  // if(Buffer->Memory)
-  //   munmap(Buffer->Memory, Buffer->Width * Buffer->Height * Buffer->BytesPerPixel);
-
-  // // NOTE(l4v): Commented out to make the texture stretch with the window size
-  // // Buffer->Width = Width;
-  // // Buffer->Height = Height;
-  // int32 BitmapMemorySize = (Buffer->Width * Buffer->Height) * Buffer->BytesPerPixel;
-  // Buffer->Memory = mmap(0,
-  // 		      BitmapMemorySize,
-  // 		      PROT_READ | PROT_WRITE,
-  // 		      MAP_ANONYMOUS | MAP_PRIVATE,
-  // 		      -1,
-  // 		      0);
   glViewport(0, 0, Width, Height);
-  // Buffer->Pitch = Buffer->Width * Buffer->BytesPerPixel;
 }
 
 internal void
@@ -347,7 +333,6 @@ SDLAudioCallback(void* UserData, uint8* AudioData, int32 Length)
   memcpy(AudioData, (uint8*)(RingBuffer->Data) + RingBuffer->PlayCursor, Region1Size);
   memcpy(&AudioData[Region1Size], (uint8*)(RingBuffer->Data), Region2Size);
   RingBuffer->PlayCursor = (RingBuffer->PlayCursor + Length) % RingBuffer->Size;
-  // NOTE(l4v): 2048 is the size of the SDL buffer in bytes
   RingBuffer->WriteCursor = (RingBuffer->PlayCursor + Length) % RingBuffer->Size;
 }
 
@@ -753,20 +738,28 @@ int main(void)
 	      if(ControllerHandles[ControllerIndex] != 0
 		 && SDL_GameControllerGetAttached(ControllerHandles[ControllerIndex]))
 		{
+		  // TODO(l4v): DPad
 		  game_controller_input *OldController = &OldInput->Controllers[ControllerIndex+1];
 		  game_controller_input *NewController = &NewInput->Controllers[ControllerIndex+1];
-		  // TODO(l4v): Handle deadzones
 	      
 		  // NOTE(l4v): We have a controller with index ControllerIndex.
 
-		  // TODO(l4v): DPad
-		  bool32 Up = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_UP);
-		  bool32 Down = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_DOWN);
-		  bool32 Left = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-		  bool32 Right = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+		  // NOTE(l4v): Set controllers to be analog
+		  NewController->IsAnalog = true;
+		  
+		  bool32 Up = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+							  SDL_CONTROLLER_BUTTON_DPAD_UP);
+		  bool32 Down = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+							    SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+		  bool32 Left = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+							    SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+		  bool32 Right = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+							     SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
 	      
-		  int16 StickX = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTX);
-		  int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex], SDL_CONTROLLER_AXIS_LEFTY);
+		  int16 StickX = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex],
+							   SDL_CONTROLLER_AXIS_LEFTX);
+		  int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex],
+							   SDL_CONTROLLER_AXIS_LEFTY);
 
 	      
 		  // SDL_GAMEPAD_LEFT_THUMB_DEADZONE 7849
@@ -857,7 +850,7 @@ int main(void)
 	  game_sound_output_buffer SoundBuffer = {};
 	  SoundBuffer.SamplesPerSec = SoundOutput.SamplesPerSec;
 	  // NOTE(l4v): For 30fps
-	  SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;//SoundBuffer.SamplesPerSec / 15.0f;
+	  SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;
 	  SoundBuffer.Samples = Samples;
       
 	  game_offscreen_buffer Buffer = {};

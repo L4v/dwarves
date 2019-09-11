@@ -6,8 +6,6 @@ GameOutputSound(game_sound_output_buffer* SoundBuffer, int32 ToneHz)
   local_persist real32 tSine = 0.0f;
   int16 ToneVolume = 3000;
   int32 WavePeriod = SoundBuffer->SamplesPerSec / ToneHz;
-
-  printf("Hz: %i\n", ToneHz);
   
   int16 *Samples = SoundBuffer->Samples;
   for(int32 SampleIndex = 0;
@@ -75,29 +73,30 @@ GameUpdateAndRender(game_memory* Memory,
       // TODO(l4v): Maybe more appropriate for the platform layer
       Memory->IsInitialized = true;
     }
-  if(!GameState)
-  GameState->BlueOffset++;
-  game_controller_input* Input0 = &Input->Controllers[0];
-
-  if(Input0->IsAnalog)
-    {
-      // NOTE(l4v): Use analog movement
-      // TODO(l4v): IsAnalog is not zeroed, so this can crash the game
-      //GameState->ToneHz = 256 * (int32)(128.0f * (Input0->EndX));
-      GameState->BlueOffset += (int32)(4.0f * (Input0->StickAverageY));
-      printf("AAA %d", GameState->BlueOffset);
-    }
-  else
-    {
-      // NOTE(l4v): Use digital movement
+  for(uint32 ControllerIndex = 0;
+      ControllerIndex < ArrayCount(Input->Controllers);
+      ++ControllerIndex){
+    game_controller_input* Controller = &Input->Controllers[ControllerIndex];
+    if(Controller->IsAnalog)
+      {
+	// NOTE(l4v): Use analog movement
+	// TODO(l4v): IsAnalog is not zeroed, so this can crash the game
+	GameState->ToneHz = 256 * (int32)(128.0f * (Controller->StickAverageX));
+	GameState->BlueOffset += (int32)(4.0f * (Controller->StickAverageY));
+	printf("%d\n", ControllerIndex);
+      }
+    else
+      {
+	// NOTE(l4v): Use digital movement
       
-    }
+      }
 
-  if(Input0->ActionDown.EndedDown)
-    {
-      GameState->GreenOffset--;
-      printf("%d\n", GameState->GreenOffset);
+    if(Controller->ActionDown.EndedDown)
+      {
+	GameState->GreenOffset--;
+	printf("%d\n", GameState->GreenOffset);
     }
+  }
 
   // NOTE(l4v): So as not to cause a crash
   if(GameState->ToneHz == 0)
