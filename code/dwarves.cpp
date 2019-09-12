@@ -81,8 +81,9 @@ GameUpdateAndRender(game_memory* Memory,
       {
 	// NOTE(l4v): Use analog movement
 	// TODO(l4v): IsAnalog is not zeroed, so this can crash the game
-	GameState->ToneHz = 256 * (int32)(128.0f * (Controller->StickAverageX));
-	GameState->BlueOffset += (int32)(4.0f * (Controller->StickAverageY));
+	GameState->ToneHz = 256 + (int32)(128.0f * (Controller->StickAverageX));
+	GameState->GreenOffset += (int32)(4.0f * (Controller->StickAverageY));
+	GameState->BlueOffset += (int32)(4.0f * (Controller->StickAverageX));
 	printf("%d\n", ControllerIndex);
       }
     else
@@ -90,12 +91,6 @@ GameUpdateAndRender(game_memory* Memory,
 	// NOTE(l4v): Use digital movement
       
       }
-
-    if(Controller->ActionDown.EndedDown)
-      {
-	GameState->GreenOffset--;
-	printf("%d\n", GameState->GreenOffset);
-    }
   }
 
   // NOTE(l4v): So as not to cause a crash

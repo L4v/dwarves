@@ -80,6 +80,7 @@ typedef double real64;
 #include <sys/mman.h>
 
 SDL_GameController* ControllerHandles[MAX_CONTROLLERS];
+SDL_Joystick* JoystickHandles[MAX_CONTROLLERS];
 SDL_Haptic* RumbleHandles[MAX_CONTROLLERS];
 
 
@@ -256,6 +257,16 @@ SDLProcessGameControllerButton(game_button_state* OldState,
   NewState->HalfTransitionCount =
     (OldState->EndedDown != NewState->EndedDown) ? 1 : 0;
 }
+internal void
+SDLProcessGameJoystickButton(game_button_state* OldState,
+			       game_button_state* NewState,
+			       SDL_Joystick* ControllerHandle,
+			       int32 Button)
+{
+  NewState->EndedDown = SDL_JoystickGetButton(ControllerHandle, Button);
+  NewState->HalfTransitionCount =
+    (OldState->EndedDown != NewState->EndedDown) ? 1 : 0;
+}
 
 internal void
 SDLProcessGameKeyboardButton(game_button_state* NewState,
@@ -294,6 +305,7 @@ SDLOpenGameControllers()
   for(int32 i = 0; i < MAX_CONTROLLERS; ++i){
     ControllerHandles[i] = 0;
     RumbleHandles[i] = 0;
+    JoystickHandles[i] = 0;
   }
   
   int32 MaxJoysticks = SDL_NumJoysticks();
@@ -303,7 +315,8 @@ SDLOpenGameControllers()
     {
       if(!SDL_IsGameController(JoystickIndex))
 	{
-	  continue;
+	  JoystickHandles[JoystickIndex] = SDL_JoystickOpen(JoystickIndex);
+	  printf("Is joystick!\n");
 	}
       if(ControllerIndex >= MAX_CONTROLLERS)
 	{
@@ -387,6 +400,20 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 	    {
 	      // TODO(l4v): Maybe update window when exposed only?
 	    }break;
+	  }
+      }break;
+
+    case SDL_JOYAXISMOTION:
+      {
+	if(Event->jaxis.which == 0)
+	  {
+	    if(Event->jaxis.axis == 0)
+	      {
+		if(Event->jaxis.value < 0)
+		  {
+		    printf("Left\n");
+		  }
+	      }
 	  }
       }break;
 
@@ -705,7 +732,7 @@ int main(void)
       // NOTE(l4v): Main loop
       while(Running)
 	{
-
+	  
 	  game_controller_input* OldKeyboardController = &OldInput->Controllers[0];
 	  game_controller_input* NewKeyboardController = &NewInput->Controllers[0];
 	  *NewKeyboardController = {};
@@ -725,12 +752,13 @@ int main(void)
 		Running = false;
 	    }
       
-	  // NOTE(l4v): Controller input
 	  uint32 MaxControllerCount = MAX_CONTROLLERS;
 	  if(MaxControllerCount > ArrayCount(NewInput->Controllers))
 	    {
 	      MaxControllerCount = ArrayCount(NewInput->Controllers);
 	    }
+	  
+	  // NOTE(l4v): We have a controller with index ControllerIndex.
 	  for(uint32 ControllerIndex = 0;
 	      ControllerIndex < MaxControllerCount;
 	      ++ControllerIndex)
@@ -738,17 +766,19 @@ int main(void)
 	      if(ControllerHandles[ControllerIndex] != 0
 		 && SDL_GameControllerGetAttached(ControllerHandles[ControllerIndex]))
 		{
+		  // NOTE(l4v): Controller input
+		  // ---------------------------
+		  
 		  // TODO(l4v): DPad
 		  game_controller_input *OldController = &OldInput->Controllers[ControllerIndex+1];
 		  game_controller_input *NewController = &NewInput->Controllers[ControllerIndex+1];
 	      
-		  // NOTE(l4v): We have a controller with index ControllerIndex.
-
 		  // NOTE(l4v): Set controllers to be analog
 		  NewController->IsAnalog = true;
 		  
 		  bool32 Up = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
 							  SDL_CONTROLLER_BUTTON_DPAD_UP);
+		  printf("YAY\n");
 		  bool32 Down = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
 							    SDL_CONTROLLER_BUTTON_DPAD_DOWN);
 		  bool32 Left = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
@@ -761,14 +791,11 @@ int main(void)
 		  int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex],
 							   SDL_CONTROLLER_AXIS_LEFTY);
 
-	      
-		  // SDL_GAMEPAD_LEFT_THUMB_DEADZONE 7849
-		  // SDL_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
 		  // NOTE(l4v): Normalizing the value and checking for deadzone
 		  NewController->StickAverageX =
 		    SDLProcessGameControllerAxisValue(StickX, SDL_GAMEPAD_LEFT_THUMB_DEADZONE);
 		  NewController->StickAverageY =
-		    SDLProcessGameControllerAxisValue(StickX, SDL_GAMEPAD_LEFT_THUMB_DEADZONE);
+		    SDLProcessGameControllerAxisValue(StickY, SDL_GAMEPAD_LEFT_THUMB_DEADZONE);
 
 		  // TODO(l4v): Min / max macros
 	      
@@ -806,18 +833,58 @@ int main(void)
 						 &(NewController->Back),
 						 ControllerHandles[ControllerIndex],
 						 SDL_CONTROLLER_BUTTON_BACK);
-	      
-		  // bool32 Start = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_START);
-		  // bool32 Back = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_BACK);
-	      
-		  // bool32 LeftShoulder = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-		  // bool32 RightShoulder = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-	      
-		  // bool32 AButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_A);
-		  // bool32 BButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_B);
-		  // bool32 XButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_X);
-		  // bool32 YButton = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex], SDL_CONTROLLER_BUTTON_Y);
+		}
+	      else if(JoystickHandles[ControllerIndex] != 0
+			&& SDL_JoystickGetAttached(JoystickHandles[ControllerIndex]))
+		{
+		  // NOTE(l4v): Joysticks
+		  // -------------------
+		  
+		  game_controller_input *OldController = &OldInput->Controllers[ControllerIndex+1];
+		  game_controller_input *NewController = &NewInput->Controllers[ControllerIndex+1];
 
+		  // NOTE(l4v): Set controllers to be analog
+		  // TODO(l4v): For now?
+		  NewController->IsAnalog = true;
+		  // TODO(l4v): The buttons are manually mapped for now, should get
+		  // mapping somehow???
+		  int16 StickX = SDL_JoystickGetAxis(JoystickHandles[ControllerIndex],
+							   0);
+		  int16 StickY = SDL_JoystickGetAxis(JoystickHandles[ControllerIndex],
+							   1);
+
+		  // NOTE(l4v): Normalizing the value and checking for deadzone
+		  NewController->StickAverageX =
+		    SDLProcessGameControllerAxisValue(StickX, SDL_GAMEPAD_LEFT_THUMB_DEADZONE);
+		  NewController->StickAverageY =
+		    SDLProcessGameControllerAxisValue(StickY, SDL_GAMEPAD_LEFT_THUMB_DEADZONE);
+
+		  // TODO(l4v): Min / max macros
+	      
+		  SDLProcessGameJoystickButton(&(OldController->ActionDown),
+						 &(NewController->ActionDown),
+						 JoystickHandles[ControllerIndex],
+						 0);
+		  SDLProcessGameJoystickButton(&(OldController->ActionRight),
+						 &(NewController->ActionRight),
+						 JoystickHandles[ControllerIndex],
+						 1);
+		  SDLProcessGameJoystickButton(&(OldController->ActionLeft),
+						 &(NewController->ActionLeft),
+						 JoystickHandles[ControllerIndex],
+						 2);
+		  SDLProcessGameJoystickButton(&(OldController->ActionUp),
+						 &(NewController->ActionUp),
+						 JoystickHandles[ControllerIndex],
+						 3);
+		  SDLProcessGameJoystickButton(&(OldController->LeftShoulder),
+						 &(NewController->LeftShoulder),
+						 JoystickHandles[ControllerIndex],
+						 4);
+		  SDLProcessGameJoystickButton(&(OldController->RightShoulder),
+						 &(NewController->RightShoulder),
+						 JoystickHandles[ControllerIndex],
+						 5);
 		}
 	      else
 		{
