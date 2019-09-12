@@ -70,12 +70,13 @@ struct game_button_state
 
 struct game_controller_input
 {
+  bool32 IsConnected;
   bool32 IsAnalog;
   real32 StickAverageX;
   real32 StickAverageY;
   union
   {
-    game_button_state Buttons[10];
+    game_button_state Buttons[12];
     struct{
       game_button_state MoveUp;
       game_button_state MoveDown;
@@ -90,7 +91,13 @@ struct game_controller_input
       game_button_state RightShoulder;
 
       game_button_state Back;
-      game_button_state Start;      
+      game_button_state Start;
+
+      // TODO(l4v): Maybe not use an anonymous array and avoid having
+      // to use the Terminator?
+      // NOTE(l4v): This should always be the last button,
+      // used as a temporary check for the size of the array.
+      game_button_state Terminator;
     };
   };
 };
@@ -100,6 +107,14 @@ struct game_input
   // TODO(l4v): Insert clock value here
   game_controller_input Controllers[5];
 };
+
+inline internal game_controller_input*
+GetController(game_input* Input, uint32 ControllerIndex)
+{
+  Assert(ControllerIndex < ArrayCount(Input->Controllers));
+  game_controller_input* Result = &Input->Controllers[ControllerIndex];
+  return Result;
+}
 
 struct game_memory
 {

@@ -52,7 +52,12 @@ GameUpdateAndRender(game_memory* Memory,
 		    game_offscreen_buffer* Buffer,
 		    game_sound_output_buffer* SoundBuffer)
 {
+  // NOTE(l4v): Pointer arithmetic to check whether the array is of
+  // the correct size
+  Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0])
+	 == (ArrayCount(Input->Controllers[0].Buttons)));
   Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
+  
   game_state* GameState = (game_state*)Memory->PermanentStorage;
   if(!Memory->IsInitialized)
     {
@@ -76,7 +81,7 @@ GameUpdateAndRender(game_memory* Memory,
   for(uint32 ControllerIndex = 0;
       ControllerIndex < ArrayCount(Input->Controllers);
       ++ControllerIndex){
-    game_controller_input* Controller = &Input->Controllers[ControllerIndex];
+    game_controller_input* Controller = GetController(Input, ControllerIndex);
     if(Controller->IsAnalog)
       {
 	// NOTE(l4v): Use analog movement
@@ -89,7 +94,22 @@ GameUpdateAndRender(game_memory* Memory,
     else
       {
 	// NOTE(l4v): Use digital movement
-      
+	if(Controller->MoveLeft.EndedDown)
+	  {
+	    GameState->BlueOffset --;
+	  }
+	if(Controller->MoveRight.EndedDown)
+	  {
+	    GameState->BlueOffset++;
+	  }
+	if(Controller->MoveUp.EndedDown)
+	  {
+	    GameState->GreenOffset++;
+	  }
+	if(Controller->MoveDown.EndedDown)
+	  {
+	    GameState->GreenOffset--;
+	  }
       }
   }
 

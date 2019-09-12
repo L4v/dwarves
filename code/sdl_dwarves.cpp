@@ -250,10 +250,9 @@ SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock,
 internal void
 SDLProcessGameControllerButton(game_button_state* OldState,
 			       game_button_state* NewState,
-			       SDL_GameController* ControllerHandle,
-			       SDL_GameControllerButton Button)
+			       bool32 Value)
 {
-  NewState->EndedDown = SDL_GameControllerGetButton(ControllerHandle, Button);
+  NewState->EndedDown = Value;
   NewState->HalfTransitionCount =
     (OldState->EndedDown != NewState->EndedDown) ? 1 : 0;
 }
@@ -278,16 +277,18 @@ SDLProcessGameKeyboardButton(game_button_state* NewState,
 }
 
 internal real32
-SDLProcessGameControllerAxisValue(int16 Value, int16 DeadZoneTreshold)
+SDLProcessGameControllerAxisValue(int16 Value, int16 DeadZoneThreshold)
 {
   real32 Result = 0;
   if(Value < -DeadZoneTreshold)
     {
-      Result = (real32)Value / 32768.0f;
+      Result = (real32)((Value + DeadZoneThreshold) /
+			(32768.0f - DeadZoneThreshold));
     }
       else if(Value > DeadZoneTreshold)
     {
-     Result = (real32)Value / 32767.0f;
+      Result = (real32)((Value - DeadZoneThreshold) /
+			(32767.0f - DeadZoneThreshold);
     }
   
   return Result;
@@ -422,15 +423,15 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
       {
 	SDL_Keycode Keycode = Event->key.keysym.sym;
 	bool32 IsDown = (Event->key.state == SDL_PRESSED);
-	bool32 WasDown;
+	//bool32 WasDown;
 
 	if(Event->key.state == SDL_RELEASED)
 	  {
-	    WasDown = true;
+	    //  WasDown = true;
 	  }
 	else if(Event->key.repeat)
 	  {
-	    WasDown = true;
+	    //WasDown = true;
 	  }
 
 	if(!(Event->key.repeat))
@@ -487,19 +488,14 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 	      }
 	    else if(Keycode == SDLK_ESCAPE)
 	      {
-		if(IsDown)
-		  {
-
-		  }
-		if(WasDown)
-		  {
-		    
-		  }
+		SDLProcessGameKeyboardButton(&NewKeyboardController->Back,
+					     IsDown);
 		ShouldQuit = true;
 	      }
 	    else if(Keycode == SDLK_SPACE)
 	      {
-		
+		SDLProcessGameKeyboardButton(&NewKeyboardController->Start,
+					     IsDown);
 	      }
 	  }
 	
@@ -732,10 +728,14 @@ int main(void)
       // NOTE(l4v): Main loop
       while(Running)
 	{
-	  
-	  game_controller_input* OldKeyboardController = &OldInput->Controllers[0];
-	  game_controller_input* NewKeyboardController = &NewInput->Controllers[0];
+	  // TODO(l4v): Zeroing macro
+	  // TODO(l4v): Not poll for disconnected controllers
+	  game_controller_input* OldKeyboardController = 
+		GetController(OldInput, 0);
+	  game_controller_input* NewKeyboardController = 
+		GetController(NewInput, 0);
 	  *NewKeyboardController = {};
+	  NewKeyboardController->IsConnected = true;
 
 	  for(uint32 ButtonIndex = 0;
 	      ButtonIndex < ArrayCount(NewKeyboardController->Buttons);
@@ -751,11 +751,11 @@ int main(void)
 	      if(SDLHandleEvent(&Event, NewKeyboardController))
 		Running = false;
 	    }
-      
+
 	  uint32 MaxControllerCount = MAX_CONTROLLERS;
-	  if(MaxControllerCount > ArrayCount(NewInput->Controllers))
+	  if(MaxControllerCount > (ArrayCount(NewInput->Controllers) - 1))
 	    {
-	      MaxControllerCount = ArrayCount(NewInput->Controllers);
+	      MaxControllerCount = (ArrayCount(NewInput->Controllers) + 1);
 	    }
 	  
 	  // NOTE(l4v): We have a controller with index ControllerIndex.
@@ -763,76 +763,115 @@ int main(void)
 	      ControllerIndex < MaxControllerCount;
 	      ++ControllerIndex)
 	    {
+	      game_controller_input *OldController =
+		GetController(OldInput, ControllerIndex);
+	      game_controller_input *NewController =
+		GetController(NewInput, ControllerIndex);
 	      if(ControllerHandles[ControllerIndex] != 0
 		 && SDL_GameControllerGetAttached(ControllerHandles[ControllerIndex]))
 		{
 		  // NOTE(l4v): Controller input
 		  // ---------------------------
 		  
-		  // TODO(l4v): DPad
-		  game_controller_input *OldController = &OldInput->Controllers[ControllerIndex+1];
-		  game_controller_input *NewController = &NewInput->Controllers[ControllerIndex+1];
-	      
-		  // NOTE(l4v): Set controllers to be analog
-		  NewController->IsAnalog = true;
+		  NewController->IsConnected = true;
 		  
-		  bool32 Up = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
-							  SDL_CONTROLLER_BUTTON_DPAD_UP);
-		  printf("YAY\n");
-		  bool32 Down = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
-							    SDL_CONTROLLER_BUTTON_DPAD_DOWN);
-		  bool32 Left = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
-							    SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-		  bool32 Right = SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
-							     SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
-	      
+		  // NOTE(l4v): Set controllers to be analog
+        
 		  int16 StickX = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex],
 							   SDL_CONTROLLER_AXIS_LEFTX);
 		  int16 StickY = SDL_GameControllerGetAxis(ControllerHandles[ControllerIndex],
 							   SDL_CONTROLLER_AXIS_LEFTY);
-
+		  // NOTE(l4v): DPad. Sets the IsAnalog to false so it would
+		  // treat it as a DPad
+		  
+		  if(SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_DPAD_UP))
+		    {
+		      NewController->StickAverageY = 1.0f;
+		      NewController->IsAnalog = false;
+		    }
+		  if(SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_DPAD_DOWN))
+		    {
+		      NewController->StickAverageY = -1.0f;
+		      NewController->IsAnalog = false;
+		    }
+		  if(SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_DPAD_LEFT))
+		    {
+		      NewController->StickAverageX = -1.0f;
+		      NewController->IsAnalog = false;
+		    }
+		  if(SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+						 SDL_CONTROLLER_BUTTON_DPAD_RIGHT))
+		    {
+		      NewController->StickAverageX = 1.0f;
+		      NewController->IsAnalog = false;
+		    }
+		  
 		  // NOTE(l4v): Normalizing the value and checking for deadzone
 		  NewController->StickAverageX =
 		    SDLProcessGameControllerAxisValue(StickX, SDL_GAMEPAD_LEFT_THUMB_DEADZONE);
 		  NewController->StickAverageY =
 		    SDLProcessGameControllerAxisValue(StickY, SDL_GAMEPAD_LEFT_THUMB_DEADZONE);
+		  // NOTE(l4v): If the stick is used => the input is analog
+		  if(NewController->StickAverageX != 0.0f
+		     || NewController->StickAverageY != 0.0f)
+		    {
+		      NewController->IsAnalog = true;
+		    }
+
+		  // NOTE(l4v): In case of "dash"
+		  real32 Threshold = 0.5f;
+		  SDLProcessGameControllerButton(&NewController->MoveLeft,
+						 &OldController->MoveLeft,
+						 (NewController->StickAverageX < -Threshold) ? 1 : 0);
+		  SDLProcessGameControllerButton(&NewController->MoveRight,
+						 &OldController->MoveRight,
+						 (NewController->StickAverageX > Threshold) ? 1 : 0);
+		  SDLProcessGameControllerButton(&NewController->MoveUp,
+						 &OldController->MoveUp,
+						 (NewController->StickAverageY < -Threshold) ? 1 : 0);
+		  SDLProcessGameControllerButton(&NewController->MoveDown,
+						 &OldController->MoveDown,
+						 (NewController->StickAverageY > Threshold) ? 1 : 0);
 
 		  // TODO(l4v): Min / max macros
 	      
 		  SDLProcessGameControllerButton(&(OldController->ActionDown),
 						 &(NewController->ActionDown),
-						 ControllerHandles[ControllerIndex],
-						 SDL_CONTROLLER_BUTTON_A);
+						 SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+									     SDL_CONTROLLER_BUTTON_A));
 		  SDLProcessGameControllerButton(&(OldController->ActionRight),
 						 &(NewController->ActionRight),
-						 ControllerHandles[ControllerIndex],
-						 SDL_CONTROLLER_BUTTON_B);
+						 SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+									     SDL_CONTROLLER_BUTTON_B));
 		  SDLProcessGameControllerButton(&(OldController->ActionLeft),
 						 &(NewController->ActionLeft),
-						 ControllerHandles[ControllerIndex],
-						 SDL_CONTROLLER_BUTTON_X);
+						 SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+									     SDL_CONTROLLER_BUTTON_X));
 		  SDLProcessGameControllerButton(&(OldController->ActionUp),
 						 &(NewController->ActionUp),
-						 ControllerHandles[ControllerIndex],
-						 SDL_CONTROLLER_BUTTON_Y);
+						 SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+									     SDL_CONTROLLER_BUTTON_Y));
 		  SDLProcessGameControllerButton(&(OldController->LeftShoulder),
 						 &(NewController->LeftShoulder),
-						 ControllerHandles[ControllerIndex],
-						 SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+						 SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+									     SDL_CONTROLLER_BUTTON_LEFTSHOULDER));
 		  SDLProcessGameControllerButton(&(OldController->RightShoulder),
 						 &(NewController->RightShoulder),
-						 ControllerHandles[ControllerIndex],
-						 SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+						 SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+									     SDL_CONTROLLER_BUTTON_RIGHTSHOULDER));
 
 		  
 		  SDLProcessGameControllerButton(&(OldController->Start),
 						 &(NewController->Start),
-						 ControllerHandles[ControllerIndex],
-						 SDL_CONTROLLER_BUTTON_START);
+						 SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+									     SDL_CONTROLLER_BUTTON_START));
 		  SDLProcessGameControllerButton(&(OldController->Back),
 						 &(NewController->Back),
-						 ControllerHandles[ControllerIndex],
-						 SDL_CONTROLLER_BUTTON_BACK);
+						 SDL_GameControllerGetButton(ControllerHandles[ControllerIndex],
+									     SDL_CONTROLLER_BUTTON_BACK));
 		}
 	      else if(JoystickHandles[ControllerIndex] != 0
 			&& SDL_JoystickGetAttached(JoystickHandles[ControllerIndex]))
@@ -840,8 +879,7 @@ int main(void)
 		  // NOTE(l4v): Joysticks
 		  // -------------------
 		  
-		  game_controller_input *OldController = &OldInput->Controllers[ControllerIndex+1];
-		  game_controller_input *NewController = &NewInput->Controllers[ControllerIndex+1];
+		  NewController->IsConnected = true;
 
 		  // NOTE(l4v): Set controllers to be analog
 		  // TODO(l4v): For now?
@@ -889,6 +927,7 @@ int main(void)
 	      else
 		{
 		  // TODO(l4v): This controller is not plugged in.
+		  NewController->IsConnected = false;
 		}
 	    }
       
