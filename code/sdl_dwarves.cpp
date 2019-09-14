@@ -375,6 +375,23 @@ SDLInitAudio(int32 SamplesPerSec, int32 BufferSize)
       SDL_CloseAudio();
     }
 }
+
+internal void
+SDLDebugDrawVertical(int32 Top, int32 Bottom, int32 X, uint32 Color)
+{
+  uint8* Pixel = ((uint8*)GlobalBackbuffer.Memory +
+		  X * GlobalBackbuffer.BytesPerPixel +
+		  Top * GlobalBackbuffer.Pitch);
+
+  for(int32 Y = Top;
+      Y < Bottom;
+      ++Y)
+    {
+      *(uint32*)Pixel = Color;
+      Pixel += GlobalBackbuffer.Pitch;
+    }
+}
+
 internal bool32
 SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 {
@@ -523,6 +540,13 @@ SDLGetSecondsElapsed(int64 Start, int64 End)
 int main(void)
 {
 
+
+  // TODO(l4v): Check this with the system automatically
+  // NOTE(l4v): Temporary
+  #define MonitorRefreshHz 60
+  #define GameUpdateHz MonitorRefreshHz / 2
+  #define FramesOfAudioLatency 2
+  
   GlobalPerfCountFrequency = SDL_GetPerformanceFrequency();
   
   SDL_Window* Window = 0;
@@ -577,18 +601,15 @@ int main(void)
   SoundOutput.BytesPerSample = sizeof(int16) * 2;
   SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSec * SoundOutput.BytesPerSample;
   SoundOutput.tSine = 0.0f;
-  SoundOutput.LatencySampleCount = SoundOutput.SamplesPerSec / 15;
+  // TODO(l4v): Because GameUpdateHz is buggy, this is hardcoded, could be just supstituted with
+  // a " / 15" instead of "2 * ... / 30"
+  SoundOutput.LatencySampleCount = 2 * SoundOutput.SamplesPerSec / 30;
   
   SDLInitAudio(SoundOutput.SamplesPerSec, SoundOutput.SecondaryBufferSize);
   int16* Samples = (int16*)calloc(SoundOutput.SamplesPerSec,
   				  SoundOutput.BytesPerSample);
   SDL_PauseAudio(0);
 
-  // TODO(l4v): Check this with the system automatically
-  // NOTE(l4v): Temporary
-  #define MonitorRefreshHz 60
-  #define GameUpdateHz MonitorRefreshHz / 2
-  
   // TODO(l4v): 1.0f / (real32)GameUpdateHz gives strange results
   real32 TargetSecondsPerFrame = 1.0f / 30.0f;
   
@@ -1058,17 +1079,8 @@ int main(void)
 	      int32 X = PadX +
 		(int32)(C * (real32)DebugLastPlayCursor[PlayCursorIndex]);
 	      uint32 Color = 0xFFFFFFFF;
-
-	      uint8* Pixel = ((uint8*)GlobalBackbuffer.Memory +
-				      X * GlobalBackbuffer.BytesPerPixel +
-				      Top * GlobalBackbuffer.Pitch);
-	      for(int32 Y = Top;
-		  Y < Bottom;
-		  ++Y)
-		{
-		  *(uint32*)Pixel = Color;
-		  Pixel += GlobalBackbuffer.Pitch;
-		}
+	      
+	      SDLDebugDrawVertical(Top, Bottom, X, 0xFFFFFFFF);
 	      
 	    }
 #endif
