@@ -64,7 +64,7 @@ GameUpdateAndRender(game_memory* Memory,
       GameState->ToneHz = 256;
       GameState->BlueOffset = 0;
       GameState->GreenOffset = 0;
-
+#if 0
       char Filename[32] = "../code/";
       strcat(Filename, __FILE__);
 
@@ -74,6 +74,8 @@ GameUpdateAndRender(game_memory* Memory,
 	  DEBUGPlatformWriteEntireFile("../data/test.out", BitmapMemory.ContentsSize, BitmapMemory.Contents);
 	  DEBUGPlatformFreeFileMemory(BitmapMemory.Contents);
 	}
+      printf("TEST");
+#endif
       
       // TODO(l4v): Maybe more appropriate for the platform layer
       Memory->IsInitialized = true;

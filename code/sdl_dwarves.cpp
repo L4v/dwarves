@@ -84,8 +84,8 @@ SDL_Joystick* JoystickHandles[MAX_CONTROLLERS];
 SDL_Haptic* RumbleHandles[MAX_CONTROLLERS];
 
 
-global_variable sdl_audio_ring_buffer AudioRingBuffer;
-global_variable sdl_offscreen_buffer GlobalBackBuffer;
+global_variable sdl_audio_ring_buffer GlobalAudioRingBuffer;
+global_variable sdl_offscreen_buffer GlobalBackbuffer;
 global_variable uint64 GlobalPerfCountFrequency;
 
 internal const char*
@@ -213,13 +213,13 @@ SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock,
 		   int32 BytesToWrite,
 		   game_sound_output_buffer* SourceBuffer)
 {
-  void* Region1 = (uint8*) AudioRingBuffer.Data + ByteToLock;
+  void* Region1 = (uint8*) GlobalAudioRingBuffer.Data + ByteToLock;
   int32 Region1Size = BytesToWrite;
   if(Region1Size + ByteToLock > SoundOutput->SecondaryBufferSize)
     {
       Region1Size = SoundOutput->SecondaryBufferSize - ByteToLock;
     }
-  void* Region2 = (uint8*) AudioRingBuffer.Data;
+  void* Region2 = (uint8*) GlobalAudioRingBuffer.Data;
   int32 Region2Size = BytesToWrite - Region1Size;
   int32 Region1SampleCount = Region1Size / SoundOutput->BytesPerSample;
   int16* DestSample = (int16*) Region1;
@@ -361,11 +361,11 @@ SDLInitAudio(int32 SamplesPerSec, int32 BufferSize)
   AudioSettings.channels = 2;
   AudioSettings.samples = 512;
   AudioSettings.callback = &SDLAudioCallback;
-  AudioSettings.userdata = &AudioRingBuffer;
+  AudioSettings.userdata = &GlobalAudioRingBuffer;
   
-  AudioRingBuffer.Size = BufferSize;
-  AudioRingBuffer.Data = calloc(BufferSize, 1);
-  AudioRingBuffer.PlayCursor = AudioRingBuffer.WriteCursor = 0;
+  GlobalAudioRingBuffer.Size = BufferSize;
+  GlobalAudioRingBuffer.Data = calloc(BufferSize, 1);
+  GlobalAudioRingBuffer.PlayCursor = GlobalAudioRingBuffer.WriteCursor = 0;
   
   SDL_OpenAudio(&AudioSettings, 0);
 
@@ -396,7 +396,7 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 	    // NOTE(l4v): In case the window is resized
 	  case SDL_WINDOWEVENT_RESIZED:
 	    {
-	      SDLWindowResize(&GlobalBackBuffer, Event->window.data1, Event->window.data2);
+	      SDLWindowResize(&GlobalBackbuffer, Event->window.data1, Event->window.data2);
 	    }break;
 	  case SDL_WINDOWEVENT_EXPOSED:
 	    {
@@ -585,7 +585,12 @@ int main(void)
   SDL_PauseAudio(0);
 
   // TODO(l4v): Check this with the system automatically
-  int32 MonitorRefreshHz = 30;
+  // NOTE(l4v): Temporary
+  #define MonitorRefreshHz 60
+  #define GameUpdateHz MonitorRefreshHz / 2
+  
+  // TODO(l4v): 1.0f / (real32)GameUpdateHz gives strange results
+  real32 TargetSecondsPerFrame = 1.0f / 30.0f;
   
   // NOTE(l4v): Setup the viewport
   int32 Width, Height;
@@ -593,10 +598,10 @@ int main(void)
   SDL_GetWindowSize(Window, &Width, &Height);
   glewInit();
   glViewport(0, 0, Width, Height);
-  GlobalBackBuffer.Width = Width;
-  GlobalBackBuffer.Height = Height;
+  GlobalBackbuffer.Width = Width;
+  GlobalBackbuffer.Height = Height;
 
-  SDLWindowResize(&GlobalBackBuffer, Width, Height);
+  SDLWindowResize(&GlobalBackbuffer, Width, Height);
   
   // NOTE(l4v): For capturing the mouse and making it invisible
   // SDL_ShowCursor(SDL_DISABLE);
@@ -700,17 +705,17 @@ int main(void)
   glUseProgram(ShaderProgram);
   glUniform1i(glGetUniformLocation(ShaderProgram, "texture1"), 0);
 
-  GlobalBackBuffer.BytesPerPixel = 4;
-  GlobalBackBuffer.Width = Width;
-  GlobalBackBuffer.Height = Height;
-  int32 BitmapMemorySize = (GlobalBackBuffer.Width * GlobalBackBuffer.Height) * GlobalBackBuffer.BytesPerPixel;
-  GlobalBackBuffer.Memory = mmap(0,
+  GlobalBackbuffer.BytesPerPixel = 4;
+  GlobalBackbuffer.Width = Width;
+  GlobalBackbuffer.Height = Height;
+  int32 BitmapMemorySize = (GlobalBackbuffer.Width * GlobalBackbuffer.Height) * GlobalBackbuffer.BytesPerPixel;
+  GlobalBackbuffer.Memory = mmap(0,
 			BitmapMemorySize,
 			PROT_READ | PROT_WRITE,
 			MAP_ANONYMOUS | MAP_PRIVATE,
 			-1,
 			0);
-  GlobalBackBuffer.Pitch = GlobalBackBuffer.Width * GlobalBackBuffer.BytesPerPixel;
+  GlobalBackbuffer.Pitch = GlobalBackbuffer.Width * GlobalBackbuffer.BytesPerPixel;
 
 
   game_input Input[2];
@@ -745,6 +750,8 @@ int main(void)
   if(Samples && GameMemory.PermanentStorage && GameMemory.TransientStorage)
     {
       bool32 Running = true;
+      uint32 DebugLastPlayCursorIndex = 0;
+      int32 DebugLastPlayCursor[GameUpdateHz / 2] = {};
       // NOTE(l4v): Main loop
       while(Running)
 	{
@@ -951,14 +958,14 @@ int main(void)
 		}
 	    }
       
-	  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GlobalBackBuffer.Width, GlobalBackBuffer.Height,
-		       0, GL_RGBA, GL_UNSIGNED_BYTE, GlobalBackBuffer.Memory);
+	  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GlobalBackbuffer.Width, GlobalBackbuffer.Height,
+		       0, GL_RGBA, GL_UNSIGNED_BYTE, GlobalBackbuffer.Memory);
 	  glGenerateMipmap(GL_TEXTURE_2D);
       
 	  SDL_LockAudio();
 	  int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) % SoundOutput.SecondaryBufferSize;
 	  int32 TargetCursor =
-	    ((AudioRingBuffer.PlayCursor +
+	    ((GlobalAudioRingBuffer.PlayCursor +
 	      (SoundOutput.LatencySampleCount * SoundOutput.BytesPerSample))
 	     % SoundOutput.SecondaryBufferSize);
 	  int32 BytesToWrite = 0;
@@ -980,11 +987,11 @@ int main(void)
 	  SoundBuffer.Samples = Samples;
       
 	  game_offscreen_buffer Buffer = {};
-	  Buffer.Memory = GlobalBackBuffer.Memory;
-	  Buffer.Width = GlobalBackBuffer.Width;
-	  Buffer.Height = GlobalBackBuffer.Height;
-	  Buffer.Pitch = GlobalBackBuffer.Pitch;
-	  Buffer.BytesPerPixel = GlobalBackBuffer.BytesPerPixel;
+	  Buffer.Memory = GlobalBackbuffer.Memory;
+	  Buffer.Width = GlobalBackbuffer.Width;
+	  Buffer.Height = GlobalBackbuffer.Height;
+	  Buffer.Pitch = GlobalBackbuffer.Pitch;
+	  Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
 	  GameUpdateAndRender(&GameMemory, Input, &Buffer, &SoundBuffer);
       
 	  SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite,
@@ -992,8 +999,6 @@ int main(void)
 
 	  // NOTE(l4v): Timing
 	  // -----------------
-	  real32 TargetSecondsPerFrame = 1.0f / (real32)MonitorRefreshHz;
-
 	  int64 WorkCounter = SDLGetWallClock();
 	  real32 WorkSecondsElapsed = SDLGetSecondsElapsed(LastCounter,
 							   WorkCounter);
@@ -1019,6 +1024,13 @@ int main(void)
 	      // TODO(l4v): Missed frame rate!!!
 	      // TODO(l4v): Logging
 	    }
+	  int64 EndCounter = SDLGetWallClock();
+	  real32 MSPerFrame = 1000.0f * SDLGetSecondsElapsed(LastCounter,
+							     EndCounter);
+	  real32 SPerFrame = SDLGetSecondsElapsed(LastCounter, EndCounter);
+	  LastCounter = EndCounter;
+	  printf("%f[ms/f]\n", MSPerFrame);
+
 
 	  // NOTE(l4v): Testing drawing
 	  // --------------------------
@@ -1030,20 +1042,57 @@ int main(void)
 	  glUseProgram(ShaderProgram);
 	  glBindVertexArray(VAO);
 	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-      
+
+#if INTERNAL_BUILD
+	  // NOTE(l4v): Drawing the buffer debug info
+	  int32 PadX = 16;
+	  int32 PadY = 16;
+	  int32 Top = PadY;
+	  int32 Bottom = GlobalBackbuffer.Height - PadY;
+	  real32 C = (GlobalBackbuffer.Width - 2 * PadX) /
+	    (real32)SoundOutput.SecondaryBufferSize;
+	  for(uint32 PlayCursorIndex = 0;
+	      PlayCursorIndex < DebugLastPlayCursorIndex;
+	      ++PlayCursorIndex)
+	    {
+	      int32 X = PadX +
+		(int32)(C * (real32)DebugLastPlayCursor[PlayCursorIndex]);
+	      uint32 Color = 0xFFFFFFFF;
+
+	      uint8* Pixel = ((uint8*)GlobalBackbuffer.Memory +
+				      X * GlobalBackbuffer.BytesPerPixel +
+				      Top * GlobalBackbuffer.Pitch);
+	      for(int32 Y = Top;
+		  Y < Bottom;
+		  ++Y)
+		{
+		  *(uint32*)Pixel = Color;
+		  Pixel += GlobalBackbuffer.Pitch;
+		}
+	      
+	    }
+#endif
+	  
 	  SDL_GL_SwapWindow(Window);
+	  
+#if INTERNAL_BUILD
+	  // NOTE(l4v): Debug code
+	  {
+	    int32 PlayCursor = GlobalAudioRingBuffer.PlayCursor;
+	    int32 WriteCursor = GlobalAudioRingBuffer.WriteCursor;
+
+	    DebugLastPlayCursor[DebugLastPlayCursorIndex++] = PlayCursor;
+	    if(DebugLastPlayCursorIndex > ArrayCount(DebugLastPlayCursor))
+	      {
+		DebugLastPlayCursorIndex = 0;
+	      }
+	  }
+#endif
 	  
 	  game_input* Temp = NewInput;
 	  NewInput = OldInput;
 	  OldInput = Temp;
 	  // TODO(l4v): Should they be cleared?
-	  
-	  int64 EndCounter = SDLGetWallClock();
-	  LastCounter = WorkCounter;
-
-	  real32 MSPerFrame = 1000.0f * SDLGetSecondsElapsed(LastCounter,
-							     EndCounter);
-	  printf("%lf[ms/f]\n", MSPerFrame);
 	  
 	  uint64 EndCycleCount = _rdtsc();
 	  uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
@@ -1059,8 +1108,8 @@ int main(void)
   // or PulseAudio, only one audio device can be open across the entire
   // system, thus to be safe, audio should be closed
   SDL_CloseAudio();
-  if(GlobalBackBuffer.Memory)
-    munmap(GlobalBackBuffer.Memory, Width * Height * 4);
+  if(GlobalBackbuffer.Memory)
+    munmap(GlobalBackbuffer.Memory, Width * Height * 4);
   
   return 0;
 }
