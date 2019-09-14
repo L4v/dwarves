@@ -1040,6 +1040,10 @@ int main(void)
 	  
 	  int64 EndCounter = SDLGetWallClock();
 	  LastCounter = WorkCounter;
+
+	  real32 MSPerFrame = 1000.0f * SDLGetSecondsElapsed(LastCounter,
+							     EndCounter);
+	  printf("%lf[ms/f]\n", MSPerFrame);
 	  
 	  uint64 EndCycleCount = _rdtsc();
 	  uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
