@@ -86,6 +86,7 @@ SDL_Haptic* RumbleHandles[MAX_CONTROLLERS];
 
 global_variable sdl_audio_ring_buffer AudioRingBuffer;
 global_variable sdl_offscreen_buffer GlobalBackBuffer;
+global_variable uint64 GlobalPerfCountFrequency;
 
 internal const char*
 LoadShader(const char* path)
@@ -280,15 +281,15 @@ internal real32
 SDLProcessGameControllerAxisValue(int16 Value, int16 DeadZoneThreshold)
 {
   real32 Result = 0;
-  if(Value < -DeadZoneTreshold)
+  if(Value < -DeadZoneThreshold)
     {
       Result = (real32)((Value + DeadZoneThreshold) /
 			(32768.0f - DeadZoneThreshold));
     }
-      else if(Value > DeadZoneTreshold)
+      else if(Value > DeadZoneThreshold)
     {
       Result = (real32)((Value - DeadZoneThreshold) /
-			(32767.0f - DeadZoneThreshold);
+			(32767.0f - DeadZoneThreshold));
     }
   
   return Result;
@@ -505,9 +506,25 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
   return ShouldQuit;
 }
 
+inline internal int64
+SDLGetWallClock()
+{
+  int64 Result = SDL_GetPerformanceCounter();
+  return Result;
+}
+
+inline internal real32
+SDLGetSecondsElapsed(int64 Start, int64 End)
+{
+  real32 Result = (real32)(End - Start) / (real32)GlobalPerfCountFrequency;
+  return Result;
+}
+
 int main(void)
 {
 
+  GlobalPerfCountFrequency = SDL_GetPerformanceFrequency();
+  
   SDL_Window* Window = 0;
   SDL_GLContext GLContext;
 
@@ -567,8 +584,12 @@ int main(void)
   				  SoundOutput.BytesPerSample);
   SDL_PauseAudio(0);
 
+  // TODO(l4v): Check this with the system automatically
+  int32 MonitorRefreshHz = 30;
+  
   // NOTE(l4v): Setup the viewport
   int32 Width, Height;
+  
   SDL_GetWindowSize(Window, &Width, &Height);
   glewInit();
   glViewport(0, 0, Width, Height);
@@ -585,9 +606,8 @@ int main(void)
   // NOTE(l4v): Enable z-buffer
   // glEnable(GL_DEPTH_TEST);
 
-  uint64 LastCounter = SDL_GetPerformanceCounter();
+  uint64 LastCounter = SDLGetWallClock();
   uint64 LastCycleCount = _rdtsc();
-  uint64 PerfCountFrequency = SDL_GetPerformanceFrequency();
 
   const char* VertexShaderSource = LoadShader("../shaders/triangle.vs");
   const char* FragmentShaderSource = LoadShader("../shaders/triangle.fs");
@@ -970,6 +990,36 @@ int main(void)
 	  SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite,
 			     &SoundBuffer);
 
+	  // NOTE(l4v): Timing
+	  // -----------------
+	  real32 TargetSecondsPerFrame = 1.0f / (real32)MonitorRefreshHz;
+
+	  int64 WorkCounter = SDLGetWallClock();
+	  real32 WorkSecondsElapsed = SDLGetSecondsElapsed(LastCounter,
+							   WorkCounter);
+	  real32 SecondsElapsedForFrame = WorkSecondsElapsed;
+	  if(SecondsElapsedForFrame < TargetSecondsPerFrame)
+	    {
+	      while(SecondsElapsedForFrame < TargetSecondsPerFrame)
+		{
+
+		  // TODO(l4v): Look at nanosleep, poll, etc, because
+		  // of sleep granularity
+		  uint32 MSToSleepFor = (uint32)(1000.0f *
+						 (TargetSecondsPerFrame -
+						  SecondsElapsedForFrame));
+		  SDL_Delay(MSToSleepFor);
+		  SecondsElapsedForFrame =
+		    SDLGetSecondsElapsed(LastCounter,
+					 SDLGetWallClock());
+		}
+	    }
+	  else
+	    {
+	      // TODO(l4v): Missed frame rate!!!
+	      // TODO(l4v): Logging
+	    }
+
 	  // NOTE(l4v): Testing drawing
 	  // --------------------------
 	  glClearColor(0.8f, 0.0f, 0.8f, 1.0f);
@@ -982,24 +1032,18 @@ int main(void)
 	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
       
 	  SDL_GL_SwapWindow(Window);
-
-	  uint64 EndCycleCount = _rdtsc();
-	  uint64 EndCounter = SDL_GetPerformanceCounter();
-	  uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
-	  uint64 CounterElapsed = EndCounter - LastCounter;
-	  // NOTE(l4v): Milliseconds per frame
-	  uint64 MSPerFrame = ((1000 * CounterElapsed) / PerfCountFrequency);
-	  uint32 FPS = PerfCountFrequency / CounterElapsed;
-	  // NOTE(l4v): Mega cycles per frame
-	  uint32 MCPF = (uint32)CyclesElapsed / 1000000;
-
-	  LastCounter = EndCounter;
-	  LastCycleCount = EndCycleCount;
-
+	  
 	  game_input* Temp = NewInput;
 	  NewInput = OldInput;
 	  OldInput = Temp;
 	  // TODO(l4v): Should they be cleared?
+	  
+	  int64 EndCounter = SDLGetWallClock();
+	  LastCounter = WorkCounter;
+	  
+	  uint64 EndCycleCount = _rdtsc();
+	  uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
+	  LastCycleCount = EndCycleCount;
 	}
     }
   else
