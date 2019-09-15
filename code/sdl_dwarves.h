@@ -27,5 +27,11 @@ struct sdl_sound_output
   int32 LatencySampleCount;
 };
 
+struct sdl_debug_time_marker
+{
+  int32 PlayCursor;
+  int32 WriteCursor;
+};
+
 #define SDL_DWARVES_H
 #endif

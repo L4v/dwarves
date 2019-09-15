@@ -74,3 +74,4 @@
 ;; Run compile script
 (setq compile-command "./build.sh")
 (global-set-key (kbd "<f5>") 'compile)
+

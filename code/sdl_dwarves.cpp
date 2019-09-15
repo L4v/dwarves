@@ -392,6 +392,39 @@ SDLDebugDrawVertical(int32 Top, int32 Bottom, int32 X, uint32 Color)
     }
 }
 
+internal inline void
+SDLDrawSoundBufferMarker(sdl_sound_output* SoundOutput,
+			 real32 C, int32 PadX, int32 Top, int32 Bottom,
+			 int32 Value, uint32 Color)
+{
+  Assert(Value < SoundOutput->SecondaryBufferSize);
+  real32 XReal32 = (C * (real32)Value);
+  int32 X = PadX + (int32)XReal32;
+  SDLDebugDrawVertical(Top, Bottom, X, Color);
+}
+
+internal void
+SDLDebugSyncDisplay(uint32 LastMarkerIndex, sdl_debug_time_marker* Marker,
+		    sdl_sound_output* SoundOutput, sdl_offscreen_buffer* BackBuffer)
+{
+  int32 PadX = 16;
+  int32 PadY = 16;
+  int32 Top = PadY;
+  int32 Bottom = BackBuffer->Height - PadY;
+  real32 C = (BackBuffer->Width - 2 * PadX) /
+    (real32)SoundOutput->SecondaryBufferSize;
+  for(uint32 PlayCursorIndex = 0;
+      PlayCursorIndex < LastMarkerIndex;
+      ++PlayCursorIndex)
+    {
+      SDLDrawSoundBufferMarker(SoundOutput, C, PadX, Top, Bottom,
+			       Marker[PlayCursorIndex].PlayCursor, 0xFFFFFFFF);
+      SDLDrawSoundBufferMarker(SoundOutput, C, PadX, Top, Bottom,
+			       Marker[PlayCursorIndex].WriteCursor, 0xFF0000FF);
+    }
+	    
+}
+
 internal bool32
 SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 {
@@ -451,9 +484,9 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 	  {
 	    //WasDown = true;
 	  }
-
 	if(!(Event->key.repeat))
 	  {
+#if 0
 	    if(Keycode == SDLK_w)
 	      {
 		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveUp,
@@ -504,7 +537,8 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionRight,
 					     IsDown);
 	      }
-	    else if(Keycode == SDLK_ESCAPE)
+#endif
+	    if(Keycode == SDLK_ESCAPE)
 	      {
 		SDLProcessGameKeyboardButton(&NewKeyboardController->Back,
 					     IsDown);
@@ -771,13 +805,17 @@ int main(void)
   if(Samples && GameMemory.PermanentStorage && GameMemory.TransientStorage)
     {
       bool32 Running = true;
-      uint32 DebugLastPlayCursorIndex = 0;
+      uint32 DebugLastMarkerIndex = 0;
       int32 DebugLastPlayCursor[GameUpdateHz / 2] = {};
+      sdl_debug_time_marker DebugMarker[GameUpdateHz / 2] = {};
       // NOTE(l4v): Main loop
       while(Running)
 	{
 	  // TODO(l4v): Zeroing macro
 	  // TODO(l4v): Not poll for disconnected controllers
+	  
+	  // NOTE(l4v): Keyboard input
+	  // ------------------------
 	  game_controller_input* OldKeyboardController = 
 		GetController(OldInput, 0);
 	  game_controller_input* NewKeyboardController = 
@@ -791,6 +829,58 @@ int main(void)
 	    {
 	      NewKeyboardController->Buttons[ButtonIndex].EndedDown =
 		OldKeyboardController->Buttons[ButtonIndex].EndedDown;
+	    }
+
+	  const uint8* KeyStates = SDL_GetKeyboardState(0);
+	  if(KeyStates[SDL_SCANCODE_W])
+	    {
+	      SDLProcessGameKeyboardButton(&NewKeyboardController->MoveUp,
+					   1);
+	    }
+	  if(KeyStates[SDL_SCANCODE_A])
+	    {
+	      SDLProcessGameKeyboardButton(&NewKeyboardController->MoveLeft,
+					   1);
+	    }
+	  if(KeyStates[SDL_SCANCODE_S])
+	    {
+	      SDLProcessGameKeyboardButton(&NewKeyboardController->MoveDown,
+					   1);
+	    }
+	  if(KeyStates[SDL_SCANCODE_D])
+	    {
+	      SDLProcessGameKeyboardButton(&NewKeyboardController->MoveRight,
+					   1);
+	    }
+	  if(KeyStates[SDL_SCANCODE_Q])
+	    {
+	      SDLProcessGameKeyboardButton(&NewKeyboardController->LeftShoulder,
+					   1);
+	    }
+	  if(KeyStates[SDL_SCANCODE_E])
+	    {
+	      SDLProcessGameKeyboardButton(&NewKeyboardController->RightShoulder,
+					   1);
+	    }
+	  if(KeyStates[SDL_SCANCODE_UP])
+	    {
+	      SDLProcessGameKeyboardButton(&NewKeyboardController->ActionUp,
+					   1);
+	    }
+	  if(KeyStates[SDL_SCANCODE_DOWN])
+	    {
+	      SDLProcessGameKeyboardButton(&NewKeyboardController->ActionDown,
+					   1);
+	    }
+	  if(KeyStates[SDL_SCANCODE_LEFT])
+	    {
+	      SDLProcessGameKeyboardButton(&NewKeyboardController->ActionLeft,
+					   1);
+	    }
+	  if(KeyStates[SDL_SCANCODE_RIGHT])
+	    {
+	      SDLProcessGameKeyboardButton(&NewKeyboardController->ActionRight,
+					   1);
 	    }
       
 	  SDL_Event Event;
@@ -1064,42 +1154,21 @@ int main(void)
 	  glBindVertexArray(VAO);
 	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+	  
 #if INTERNAL_BUILD
-	  // NOTE(l4v): Drawing the buffer debug info
-	  int32 PadX = 16;
-	  int32 PadY = 16;
-	  int32 Top = PadY;
-	  int32 Bottom = GlobalBackbuffer.Height - PadY;
-	  real32 C = (GlobalBackbuffer.Width - 2 * PadX) /
-	    (real32)SoundOutput.SecondaryBufferSize;
-	  for(uint32 PlayCursorIndex = 0;
-	      PlayCursorIndex < DebugLastPlayCursorIndex;
-	      ++PlayCursorIndex)
+	  // NOTE(l4v): Debug code
+	    SDLDebugSyncDisplay(DebugLastMarkerIndex, DebugMarker, &SoundOutput,
+				&GlobalBackbuffer);
+	   
+	  DebugMarker[DebugLastMarkerIndex].PlayCursor = GlobalAudioRingBuffer.PlayCursor;
+	  DebugMarker[DebugLastMarkerIndex].WriteCursor = GlobalAudioRingBuffer.WriteCursor;
+	  if(DebugLastMarkerIndex++ >= ArrayCount(DebugLastPlayCursor))
 	    {
-	      int32 X = PadX +
-		(int32)(C * (real32)DebugLastPlayCursor[PlayCursorIndex]);
-	      uint32 Color = 0xFFFFFFFF;
-	      
-	      SDLDebugDrawVertical(Top, Bottom, X, 0xFFFFFFFF);
-	      
+	      DebugLastMarkerIndex = 0;
 	    }
 #endif
 	  
 	  SDL_GL_SwapWindow(Window);
-	  
-#if INTERNAL_BUILD
-	  // NOTE(l4v): Debug code
-	  {
-	    int32 PlayCursor = GlobalAudioRingBuffer.PlayCursor;
-	    int32 WriteCursor = GlobalAudioRingBuffer.WriteCursor;
-
-	    DebugLastPlayCursor[DebugLastPlayCursorIndex++] = PlayCursor;
-	    if(DebugLastPlayCursorIndex > ArrayCount(DebugLastPlayCursor))
-	      {
-		DebugLastPlayCursorIndex = 0;
-	      }
-	  }
-#endif
 	  
 	  game_input* Temp = NewInput;
 	  NewInput = OldInput;
