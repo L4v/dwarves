@@ -15,69 +15,19 @@
   - GetKeyboardLayout (for french, international WASD)
   ...
 */
-#include <stdint.h>
-#include <cstddef>
-#include <cstdio>
-#include <cstring>
-// TODO(l4v): Implement own functions
-#include <math.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-
-#define internal static
-#define global_variable static
-#define local_persist static
-
-/*
-  NOTE(l4v): 
-  SLOW_BUILD:
-  0 - No slow code allowed
-  1 - Slow code allowed
-
-  INTERNAL:
-  0 - For public release
-  1 - For developers
-*/
-
-#if SLOW_BUILD
-#define Assert(Expression)			\
-  if(!(Expression)) {*(int*)0 = 0;}
-#else
-#define Assert(Expression)
-#endif
-
-#define MAX_CONTROLLERS 4
-#define Pi32 3.14159265359f
-#define SDL_GAMEPAD_LEFT_THUMB_DEADZONE 7849
-#define SDL_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
-
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-typedef int32 bool32;
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-
-typedef size_t memory_index;
-
-typedef float real32;
-typedef double real64;
-
 #include "dwarves.h"
-#include "dwarves.cpp"
-#include "sdl_dwarves.h"
 
 #include "SDL2/SDL.h"
 #include <GL/glew.h>
 #include <x86intrin.h>
 #include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <dlfcn.h>
+#include <unistd.h>
+
+#include "sdl_dwarves.h"
 
 SDL_GameController* ControllerHandles[MAX_CONTROLLERS];
 SDL_Joystick* JoystickHandles[MAX_CONTROLLERS];
@@ -112,7 +62,7 @@ LoadShader(const char* path)
   return shaderText;
 }
 
-internal debug_read_file_result
+debug_read_file_result
 DEBUGPlatformReadEntireFile(char* Filename)
 {
   debug_read_file_result Result = {};
@@ -167,7 +117,7 @@ DEBUGPlatformReadEntireFile(char* Filename)
   close(FileHandle);
   return Result;
 }
-internal void
+void
 DEBUGPlatformFreeFileMemory(void* Memory)
 {
   if(Memory)
@@ -176,7 +126,7 @@ DEBUGPlatformFreeFileMemory(void* Memory)
     }
 }
 
-internal bool32
+bool32
 DEBUGPlatformWriteEntireFile(char* Filename,
 			     uint32 MemorySize,
 			     void* Memory)
@@ -330,6 +280,41 @@ SDLOpenGameControllers()
       ControllerIndex++;
       printf("Is game controller!\n");
     }  
+}
+
+struct sdl_game_code
+{
+  void* GameCodeDyLib;
+  game_update_and_render* UpdateAndRender;
+  game_get_sound_samples* GetSoundSamples;
+
+  bool32 IsValid;
+};
+
+internal sdl_game_code
+SDLLoadGameCode()
+{
+  sdl_game_code Result = {};
+  
+  Result.GameCodeDyLib = dlopen("dwarves.dylib", RTLD_NOW);
+  if(Result.GameCodeDyLib)
+    {
+      Result.UpdateAndRender = (game_update_and_render *)
+	dlsym(Result.GameCodeDyLib, "GameUpdateAndRender");
+      Result.GetSoundSamples = (game_get_sound_samples *)
+	dlsym(Result.GameCodeDyLib, "GameGetSoundSamples");
+
+      IsValid = (Result.UpdateAndRender && Result.GetSoundSamples);
+    }
+
+  if(!IsValid)
+    {
+      printf("Game code was not loaded properly\n");
+      Result.UpdateAndRender = GameUpdateAndRenderStub;
+      Result.GetSoundSamples = GameGetSoundSamplesStub;
+    }
+  
+  return Result;
 }
 
 internal void
@@ -621,6 +606,10 @@ SDLGetSecondsElapsed(int64 Start, int64 End)
 
 int main(void)
 {
+
+  // NOTE(l4v): Loading the game code dynamically from dl
+  sdl_game_code Game = SDLLoadGameCode();
+  
   // TODO(l4v): Check this with the system automatically
   // NOTE(l4v): Temporary
   const int32 MonitorRefreshHz = 60;
@@ -817,7 +806,7 @@ int main(void)
   GlobalBackbuffer.Pitch = GlobalBackbuffer.Width * GlobalBackbuffer.BytesPerPixel;
   
   game_memory GameMemory = {};
-
+  
 #if INTERNAL
   void* BaseAddress = (void*) 0;
 #else
@@ -837,8 +826,12 @@ int main(void)
 				     0);
   GameMemory.TransientStorage = ((uint8*)GameMemory.PermanentStorage
 				 + GameMemory.PermanentStorageSize);
-  
-  if(Samples && GameMemory.PermanentStorage && GameMemory.TransientStorage)
+
+  // NOTE(l4v): Checks whether the memory was allocated
+  // mmap returns -1 if allocation failed
+  Assert(GameMemory.PermanentStorage != (void*)-1);
+  Assert(GameMemory.TransientStorage != (void*)-1);
+  if(Samples && GameMemory.PermanentStorage != (void*)-1 && GameMemory.TransientStorage != (void*)-1)
     {
       
       uint64 LastCounter = SDLGetWallClock();
@@ -1087,7 +1080,7 @@ int main(void)
 	      Buffer.Height = GlobalBackbuffer.Height;
 	      Buffer.Pitch = GlobalBackbuffer.Pitch;
 	      Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
-	      GameUpdateAndRender(&GameMemory, Input, &Buffer);
+	      Game.UpdateAndRender(&GameMemory, Input, &Buffer);
 
 	      uint64 AudioWallClock = SDLGetWallClock();
 	      real32 FromBeginToAudioSeconds = SDLGetSecondsElapsed(FlipWallClock, AudioWallClock);
@@ -1149,7 +1142,7 @@ int main(void)
 	      SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;
 	      SoundBuffer.Samples = Samples;
 	  
-	      GameGetSoundSamples(&GameMemory, &SoundBuffer);
+	      Game.GetSoundSamples(&GameMemory, &SoundBuffer);
 	  
 #if INTERNAL_BUILD
 	      sdl_debug_time_marker* Marker = &DebugMarker[DebugLastMarkerIndex];

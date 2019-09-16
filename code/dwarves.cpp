@@ -50,10 +50,7 @@ RenderWeirdGradient(game_offscreen_buffer* Buffer, int32 BlueOffset,
     }
 }
 
-internal void
-GameUpdateAndRender(game_memory* Memory,
-		    game_input* Input,
-		    game_offscreen_buffer* Buffer)
+GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
   // NOTE(l4v): Pointer arithmetic to check whether the array is of
   // the correct size
@@ -127,8 +124,7 @@ GameUpdateAndRender(game_memory* Memory,
 		      GameState->GreenOffset);
 }
 
-internal void GameGetSoundSamples(game_memory* Memory,
-				  game_sound_output_buffer* SoundBuffer)
+GAME_GET_SOUND_SAMPLES(GameGetSoundSamples)
 {
   game_state* GameState = (game_state*)Memory->PermanentStorage;
   GameOutputSound(SoundBuffer, GameState->ToneHz);
