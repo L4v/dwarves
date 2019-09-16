@@ -23,14 +23,21 @@ struct sdl_sound_output
   uint32 RunningSampleIndex;
   int32 BytesPerSample;
   int32 SecondaryBufferSize;
+  int32 SafetyBytes;
   real32 tSine;
   int32 LatencySampleCount;
 };
 
 struct sdl_debug_time_marker
 {
-  int32 PlayCursor;
-  int32 WriteCursor;
+  int32 OutputPlayCursor;
+  int32 OutputWriteCursor;
+  int32 OutputLocation;
+  int32 OutputByteCount;
+
+  int32 ExpectedFlipPlayCursor;
+  int32 FlipPlayCursor;
+  int32 FlipWriteCursor;
 };
 
 #define SDL_DWARVES_H

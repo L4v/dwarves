@@ -17,6 +17,10 @@ GameOutputSound(game_sound_output_buffer* SoundBuffer, int32 ToneHz)
       *Samples++ = SampleValue;
       *Samples++ = SampleValue;
       tSine += 2.0f * Pi32 * 1.0f / (real32)WavePeriod;
+      if(tSine >= 2.0f * Pi32)
+	{
+	  tSine -= 2.0f * Pi32;
+	}
     }
 }
 
@@ -49,8 +53,7 @@ RenderWeirdGradient(game_offscreen_buffer* Buffer, int32 BlueOffset,
 internal void
 GameUpdateAndRender(game_memory* Memory,
 		    game_input* Input,
-		    game_offscreen_buffer* Buffer,
-		    game_sound_output_buffer* SoundBuffer)
+		    game_offscreen_buffer* Buffer)
 {
   // NOTE(l4v): Pointer arithmetic to check whether the array is of
   // the correct size
@@ -98,7 +101,7 @@ GameUpdateAndRender(game_memory* Memory,
 	// NOTE(l4v): Use digital movement
 	if(Controller->MoveLeft.EndedDown)
 	  {
-	    GameState->BlueOffset --;
+	    GameState->BlueOffset--;
 	  }
 	if(Controller->MoveRight.EndedDown)
 	  {
@@ -117,10 +120,16 @@ GameUpdateAndRender(game_memory* Memory,
 
   // NOTE(l4v): So as not to cause a crash
   if(GameState->ToneHz == 0)
-    GameState->ToneHz = 1;
-  // TODO(l4v): Allow sample offsets here for more robust
-  // platform options
-  GameOutputSound(SoundBuffer, GameState->ToneHz);
+    {
+      GameState->ToneHz = 1;
+    }
   RenderWeirdGradient(Buffer, GameState->BlueOffset,
 		      GameState->GreenOffset);
+}
+
+internal void GameGetSoundSamples(game_memory* Memory,
+				  game_sound_output_buffer* SoundBuffer)
+{
+  game_state* GameState = (game_state*)Memory->PermanentStorage;
+  GameOutputSound(SoundBuffer, GameState->ToneHz);
 }

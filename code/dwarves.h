@@ -129,7 +129,13 @@ struct game_memory
 
 internal void GameUpdateAndRender(game_memory* Memory,
 				  game_input* Input,
-				  game_offscreen_buffer* Buffer,
+				  game_offscreen_buffer* Buffer);
+
+// NOTE(l4v): At the moment this has to be a very fast
+// function, cannot take more than a millisecond or so
+// TODO(l4v): Reduce the pressure on the function's performance
+// by measuring it?
+internal void GameGetSoundSamples(game_memory* Memory,
 				  game_sound_output_buffer* SoundBuffer);
 
 struct game_state

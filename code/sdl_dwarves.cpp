@@ -14,7 +14,7 @@
   - Active app
   - GetKeyboardLayout (for french, international WASD)
   ...
- */
+*/
 #include <stdint.h>
 #include <cstddef>
 #include <cstdio>
@@ -40,7 +40,7 @@
   INTERNAL:
   0 - For public release
   1 - For developers
- */
+*/
 
 #if SLOW_BUILD
 #define Assert(Expression)			\
@@ -87,6 +87,7 @@ SDL_Haptic* RumbleHandles[MAX_CONTROLLERS];
 global_variable sdl_audio_ring_buffer GlobalAudioRingBuffer;
 global_variable sdl_offscreen_buffer GlobalBackbuffer;
 global_variable uint64 GlobalPerfCountFrequency;
+global_variable bool32 GlobalPause;
 
 internal const char*
 LoadShader(const char* path)
@@ -259,9 +260,9 @@ SDLProcessGameControllerButton(game_button_state* OldState,
 }
 internal void
 SDLProcessGameJoystickButton(game_button_state* OldState,
-			       game_button_state* NewState,
-			       SDL_Joystick* ControllerHandle,
-			       int32 Button)
+			     game_button_state* NewState,
+			     SDL_Joystick* ControllerHandle,
+			     int32 Button)
 {
   NewState->EndedDown = SDL_JoystickGetButton(ControllerHandle, Button);
   NewState->HalfTransitionCount =
@@ -286,7 +287,7 @@ SDLProcessGameControllerAxisValue(int16 Value, int16 DeadZoneThreshold)
       Result = (real32)((Value + DeadZoneThreshold) /
 			(32768.0f - DeadZoneThreshold));
     }
-      else if(Value > DeadZoneThreshold)
+  else if(Value > DeadZoneThreshold)
     {
       Result = (real32)((Value - DeadZoneThreshold) /
 			(32767.0f - DeadZoneThreshold));
@@ -377,50 +378,100 @@ SDLInitAudio(int32 SamplesPerSec, int32 BufferSize)
 }
 
 internal void
-SDLDebugDrawVertical(int32 Top, int32 Bottom, int32 X, uint32 Color)
+SDLDebugDrawVertical(sdl_offscreen_buffer* BackBuffer,
+		     int32 Top, int32 Bottom, int32 X, uint32 Color)
 {
-  uint8* Pixel = ((uint8*)GlobalBackbuffer.Memory +
-		  X * GlobalBackbuffer.BytesPerPixel +
-		  Top * GlobalBackbuffer.Pitch);
-
-  for(int32 Y = Top;
-      Y < Bottom;
-      ++Y)
+  if(Top < 0)
     {
-      *(uint32*)Pixel = Color;
-      Pixel += GlobalBackbuffer.Pitch;
+      Top = 0;
+    }
+  if(Bottom > BackBuffer->Height)
+    {
+      Bottom = BackBuffer->Height;
+    }
+  if((X >= 0) && (X < BackBuffer->Width))
+    {
+      uint8* Pixel = ((uint8*)BackBuffer->Memory +
+		      X * BackBuffer->BytesPerPixel +
+		      Top * BackBuffer->Pitch);
+
+      for(int32 Y = Top;
+	  Y < Bottom;
+	  ++Y)
+	{
+	  *(uint32*)Pixel = Color;
+	  Pixel += BackBuffer->Pitch;
+	}
     }
 }
 
 internal inline void
-SDLDrawSoundBufferMarker(sdl_sound_output* SoundOutput,
+SDLDrawSoundBufferMarker(sdl_offscreen_buffer* BackBuffer,
+			 sdl_sound_output* SoundOutput,
 			 real32 C, int32 PadX, int32 Top, int32 Bottom,
 			 int32 Value, uint32 Color)
 {
-  Assert(Value < SoundOutput->SecondaryBufferSize);
+  //Assert(Value < SoundOutput->SecondaryBufferSize);
   real32 XReal32 = (C * (real32)Value);
   int32 X = PadX + (int32)XReal32;
-  SDLDebugDrawVertical(Top, Bottom, X, Color);
+  SDLDebugDrawVertical(BackBuffer, Top, Bottom, X, Color);
 }
 
 internal void
 SDLDebugSyncDisplay(uint32 LastMarkerIndex, sdl_debug_time_marker* Marker,
+		    uint32 CurrentMarkerIndex,
 		    sdl_sound_output* SoundOutput, sdl_offscreen_buffer* BackBuffer)
 {
   int32 PadX = 16;
   int32 PadY = 16;
+  int32 LineHeight = 64;
   int32 Top = PadY;
-  int32 Bottom = BackBuffer->Height - PadY;
+  int32 Bottom = PadY + LineHeight;
   real32 C = (BackBuffer->Width - 2 * PadX) /
     (real32)SoundOutput->SecondaryBufferSize;
-  for(uint32 PlayCursorIndex = 0;
-      PlayCursorIndex < LastMarkerIndex;
-      ++PlayCursorIndex)
+  for(uint32 MarkerIndex = 0;
+      MarkerIndex < LastMarkerIndex;
+      ++MarkerIndex)
     {
-      SDLDrawSoundBufferMarker(SoundOutput, C, PadX, Top, Bottom,
-			       Marker[PlayCursorIndex].PlayCursor, 0xFFFFFFFF);
-      SDLDrawSoundBufferMarker(SoundOutput, C, PadX, Top, Bottom,
-			       Marker[PlayCursorIndex].WriteCursor, 0xFF0000FF);
+      Assert(Marker[MarkerIndex].OutputPlayCursor < SoundOutput->SecondaryBufferSize);
+      Assert(Marker[MarkerIndex].OutputWriteCursor < SoundOutput->SecondaryBufferSize);
+      Assert(Marker[MarkerIndex].FlipPlayCursor < SoundOutput->SecondaryBufferSize);
+      Assert(Marker[MarkerIndex].FlipWriteCursor < SoundOutput->SecondaryBufferSize);
+      Assert(Marker[MarkerIndex].OutputLocation < SoundOutput->SecondaryBufferSize);
+      
+      Top = PadY;
+      Bottom = PadY + LineHeight;
+      // NOTE(l4v): 0xAABBGGRR
+      uint32 PlayColor = 0xFFFFFFFF;
+      uint32 WriteColor = 0xFF0000FF;
+      uint32 ExpectedFlipColor = 0xFF00FFFF;
+      if(MarkerIndex == CurrentMarkerIndex)
+	{
+	  Top += LineHeight + PadY;
+	  Bottom += LineHeight + PadY;
+	  
+	  SDLDrawSoundBufferMarker(BackBuffer, SoundOutput, C, PadX, Top, Bottom,
+				   Marker[MarkerIndex].OutputPlayCursor, PlayColor);
+	  SDLDrawSoundBufferMarker(BackBuffer, SoundOutput, C, PadX, Top, Bottom,
+				   Marker[MarkerIndex].OutputWriteCursor, WriteColor);
+	  SDLDrawSoundBufferMarker(BackBuffer, SoundOutput, C, PadX, Top, Bottom,
+				   Marker[MarkerIndex].ExpectedFlipPlayCursor, ExpectedFlipColor);
+	  
+	  Top += LineHeight + PadY;
+	  Bottom += LineHeight + PadY;
+	  
+	  SDLDrawSoundBufferMarker(BackBuffer, SoundOutput, C, PadX, Top, Bottom,
+				   Marker[MarkerIndex].OutputLocation, PlayColor);
+	  SDLDrawSoundBufferMarker(BackBuffer, SoundOutput, C, PadX, Top, Bottom,
+				   Marker[MarkerIndex].OutputLocation +
+				   Marker[MarkerIndex].OutputByteCount, WriteColor);
+	  Top += LineHeight + PadY;
+	  Bottom += LineHeight + PadY;
+	}
+      SDLDrawSoundBufferMarker(BackBuffer, SoundOutput, C, PadX, Top, Bottom,
+			       Marker[MarkerIndex].FlipPlayCursor, PlayColor);
+      SDLDrawSoundBufferMarker(BackBuffer, SoundOutput, C, PadX, Top, Bottom,
+			       Marker[MarkerIndex].FlipWriteCursor, WriteColor);
     }
 	    
 }
@@ -472,7 +523,7 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
     case SDL_KEYDOWN:
     case SDL_KEYUP:
       {
-	SDL_Keycode Keycode = Event->key.keysym.sym;
+	SDL_Keycode KeyCode = Event->key.keysym.sym;
 	bool32 IsDown = (Event->key.state == SDL_PRESSED);
 	//bool32 WasDown;
 
@@ -486,17 +537,66 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 	  }
 	if(!(Event->key.repeat))
 	  {
-	    if(Keycode == SDLK_ESCAPE)
+	    if(KeyCode == SDLK_w)
+	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveUp, IsDown);
+	      }
+	    else if(KeyCode == SDLK_a)
+	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveLeft, IsDown);
+	      }
+	    else if(KeyCode == SDLK_s)
+	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveDown, IsDown);
+	      }
+	    else if(KeyCode == SDLK_d)
+	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveRight, IsDown);
+	      }
+	    else if(KeyCode == SDLK_q)
+	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->LeftShoulder, IsDown);
+	      }
+	    else if(KeyCode == SDLK_e)
+	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->RightShoulder, IsDown);
+	      }
+	    else if(KeyCode == SDLK_UP)
+	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionUp, IsDown);
+	      }
+	    else if(KeyCode == SDLK_LEFT)
+	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionLeft, IsDown);
+	      }
+	    else if(KeyCode == SDLK_DOWN)
+	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionDown, IsDown);
+	      }
+	    else if(KeyCode == SDLK_RIGHT)
+	      {
+		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionRight, IsDown);
+	      }
+	    else if(KeyCode == SDLK_ESCAPE)
 	      {
 		SDLProcessGameKeyboardButton(&NewKeyboardController->Back,
 					     IsDown);
 		ShouldQuit = true;
 	      }
-	    else if(Keycode == SDLK_SPACE)
+	    else if(KeyCode == SDLK_SPACE)
 	      {
 		SDLProcessGameKeyboardButton(&NewKeyboardController->Start,
 					     IsDown);
 	      }
+#if INTERNAL_BUILD
+	    else if(KeyCode == SDLK_p)
+	      {
+		if(IsDown)
+		  {
+		    GlobalPause = !GlobalPause;
+		  }
+	      }
+#endif
 	  }
 	
       }break;
@@ -521,12 +621,10 @@ SDLGetSecondsElapsed(int64 Start, int64 End)
 
 int main(void)
 {
-
-
   // TODO(l4v): Check this with the system automatically
   // NOTE(l4v): Temporary
-  #define MonitorRefreshHz 60
-  #define GameUpdateHz MonitorRefreshHz / 2
+  const int32 MonitorRefreshHz = 60;
+  const int32 GameUpdateHz = MonitorRefreshHz / 2;
   
   GlobalPerfCountFrequency = SDL_GetPerformanceFrequency();
   
@@ -554,7 +652,7 @@ int main(void)
 			    1024,
 			    768,
 			    SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL
-);
+			    );
 
   if(!Window)
     {
@@ -578,13 +676,15 @@ int main(void)
     
   SoundOutput.SamplesPerSec = 48000;
   SoundOutput.RunningSampleIndex = 0;
-
   SoundOutput.BytesPerSample = sizeof(int16) * 2;
   SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSec * SoundOutput.BytesPerSample;
   SoundOutput.tSine = 0.0f;
   // TODO(l4v): Because GameUpdateHz is buggy, this is hardcoded, could be just supstituted with
   // a " / 15" instead of "2 * ... / 30"
   SoundOutput.LatencySampleCount = 2 * SoundOutput.SamplesPerSec / 30;
+  // TODO(l4v): Actually compute this variance and see what the
+  // lowest usable value is
+  SoundOutput.SafetyBytes = ((SoundOutput.SamplesPerSec * SoundOutput.BytesPerSample) / 30);
   
   SDLInitAudio(SoundOutput.SamplesPerSec, SoundOutput.SecondaryBufferSize);
   int16* Samples = (int16*)calloc(SoundOutput.SamplesPerSec,
@@ -709,11 +809,11 @@ int main(void)
   GlobalBackbuffer.Height = Height;
   int32 BitmapMemorySize = (GlobalBackbuffer.Width * GlobalBackbuffer.Height) * GlobalBackbuffer.BytesPerPixel;
   GlobalBackbuffer.Memory = mmap(0,
-			BitmapMemorySize,
-			PROT_READ | PROT_WRITE,
-			MAP_ANONYMOUS | MAP_PRIVATE,
-			-1,
-			0);
+				 BitmapMemorySize,
+				 PROT_READ | PROT_WRITE,
+				 MAP_ANONYMOUS | MAP_PRIVATE,
+				 -1,
+				 0);
   GlobalBackbuffer.Pitch = GlobalBackbuffer.Width * GlobalBackbuffer.BytesPerPixel;
   
   game_memory GameMemory = {};
@@ -758,6 +858,10 @@ int main(void)
       
       int32 AudioLatencyBytes;
       real32 AudioLatencySeconds;
+
+      // TODO(l4v): Make better pause
+      GlobalPause = false;
+      
       // NOTE(l4v): Main loop
       while(Running)
 	{
@@ -766,13 +870,18 @@ int main(void)
 	  
 	  // NOTE(l4v): Keyboard input
 	  // ------------------------
+
+	  // TODO(l4v): Fix simultaneous Keyboard and controller input
 	  game_controller_input* OldKeyboardController = 
-		GetController(OldInput, 0);
+	    GetController(OldInput, 0);
 	  game_controller_input* NewKeyboardController = 
-		GetController(NewInput, 0);
+	    GetController(NewInput, 0);
 	  *NewKeyboardController = {};
 	  NewKeyboardController->IsConnected = true;
+	  NewKeyboardController->IsAnalog = false;
 
+	  // TODO(l4v): Keyboard input without events
+	  
 	  for(uint32 ButtonIndex = 0;
 	      ButtonIndex < ArrayCount(NewKeyboardController->Buttons);
 	      ++ButtonIndex)
@@ -780,59 +889,6 @@ int main(void)
 	      NewKeyboardController->Buttons[ButtonIndex].EndedDown =
 		OldKeyboardController->Buttons[ButtonIndex].EndedDown;
 	    }
-
-	  const uint8* KeyStates = SDL_GetKeyboardState(0);
-	  if(KeyStates[SDL_SCANCODE_W])
-	    {
-	      SDLProcessGameKeyboardButton(&NewKeyboardController->MoveUp,
-					   1);
-	    }
-	  if(KeyStates[SDL_SCANCODE_A])
-	    {
-	      SDLProcessGameKeyboardButton(&NewKeyboardController->MoveLeft,
-					   1);
-	    }
-	  if(KeyStates[SDL_SCANCODE_S])
-	    {
-	      SDLProcessGameKeyboardButton(&NewKeyboardController->MoveDown,
-					   1);
-	    }
-	  if(KeyStates[SDL_SCANCODE_D])
-	    {
-	      SDLProcessGameKeyboardButton(&NewKeyboardController->MoveRight,
-					   1);
-	    }
-	  if(KeyStates[SDL_SCANCODE_Q])
-	    {
-	      SDLProcessGameKeyboardButton(&NewKeyboardController->LeftShoulder,
-					   1);
-	    }
-	  if(KeyStates[SDL_SCANCODE_E])
-	    {
-	      SDLProcessGameKeyboardButton(&NewKeyboardController->RightShoulder,
-					   1);
-	    }
-	  if(KeyStates[SDL_SCANCODE_UP])
-	    {
-	      SDLProcessGameKeyboardButton(&NewKeyboardController->ActionUp,
-					   1);
-	    }
-	  if(KeyStates[SDL_SCANCODE_DOWN])
-	    {
-	      SDLProcessGameKeyboardButton(&NewKeyboardController->ActionDown,
-					   1);
-	    }
-	  if(KeyStates[SDL_SCANCODE_LEFT])
-	    {
-	      SDLProcessGameKeyboardButton(&NewKeyboardController->ActionLeft,
-					   1);
-	    }
-	  if(KeyStates[SDL_SCANCODE_RIGHT])
-	    {
-	      SDLProcessGameKeyboardButton(&NewKeyboardController->ActionRight,
-					   1);
-	    }
-      
 	  SDL_Event Event;
 	  while(SDL_PollEvent(&Event))
 	    {
@@ -962,7 +1018,7 @@ int main(void)
 									     SDL_CONTROLLER_BUTTON_BACK));
 		}
 	      else if(JoystickHandles[ControllerIndex] != 0
-			&& SDL_JoystickGetAttached(JoystickHandles[ControllerIndex]))
+		      && SDL_JoystickGetAttached(JoystickHandles[ControllerIndex]))
 		{
 		  // NOTE(l4v): Joysticks
 		  // -------------------
@@ -1018,156 +1074,179 @@ int main(void)
 		  NewController->IsConnected = false;
 		}
 	    }
-      
-	  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GlobalBackbuffer.Width, GlobalBackbuffer.Height,
-		       0, GL_RGBA, GL_UNSIGNED_BYTE, GlobalBackbuffer.Memory);
-	  glGenerateMipmap(GL_TEXTURE_2D);
-      
-	  SDL_LockAudio();
-	  int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample)
-	    % SoundOutput.SecondaryBufferSize;
-	  int32 ExpectedSoundBytesPerFrame = ;
-	  SoundOutput.SafetyBytes = ;
-	  int32 ExpectedFrameBoundaryByte = GlobalAudioRingBuffer.PlayCursor + ExpectedSoundBytesperFrame;
+	  if(!GlobalPause)
+	    {
+	      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GlobalBackbuffer.Width, GlobalBackbuffer.Height,
+			   0, GL_RGBA, GL_UNSIGNED_BYTE, GlobalBackbuffer.Memory);
+	      glGenerateMipmap(GL_TEXTURE_2D);
+
+	      game_offscreen_buffer Buffer = {};
+	      Buffer.Memory = GlobalBackbuffer.Memory;
+	      Buffer.Width = GlobalBackbuffer.Width;
+	      Buffer.Height = GlobalBackbuffer.Height;
+	      Buffer.Pitch = GlobalBackbuffer.Pitch;
+	      Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
+	      GameUpdateAndRender(&GameMemory, Input, &Buffer);
 	  
-	  /* NOTE(l4v): 
-	     SafeWriteCursor is the position of the write cursor on
-	     the audio card + some "safety byte margin" (how much variability
-	     we think there is in output timing
-	  */
-	  int32 SafeWriteCursor = GlobalAudioRingBuffer.WriteCursor;
-	  if(SafeWriteCursor < GlobalAudioRingBuffer.PlayCursor)
-	    {
-	      SafeWriteCursor += SoundOutput.SafetyBytes;
-	    }
-	  Assert(SafeWriteCursor >= GlobalAudioRingBuffer.PlayCursor);
-      // NOTE(l4v): The audio card is considered latent if the SafeWriteCursor
-      // is after where we expect the frame flip
-      bool32 AudioCardIsLowLatency = (SafeWriteCursor < ExpectedFrameBoundaryByte);
-
-      // NOTE(l4v): Different audio sync calculations based on whether
-      // the audio card is relatively latent or not
-      int32 TargetCursor = 0;
-      if(AudioCardIsLowLatency)
-	    {
-	      TargetCursor = (ExpectedFrameBoundaryByte + ExpectedSoundBytesPerFrame);
-	    }
-	  else
-	    {
-	      TargetCursor = (GlobalAudioRingBuffer.WriteCursor + ExpectedSoundBytesPerFrame + 
-			      SoundOutput.SafetySampleBytes);
-	    }
-	  TargetCursor = TargetCursor % SoundOutput.SecondaryBufferSize;
+	      SDL_LockAudio();
+	      int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample)
+		% SoundOutput.SecondaryBufferSize;
+	      int32 ExpectedSoundBytesPerFrame = (SoundOutput.SamplesPerSec * SoundOutput.BytesPerSample) /
+		GameUpdateHz;
+	      int32 ExpectedFrameBoundaryByte = GlobalAudioRingBuffer.PlayCursor + ExpectedSoundBytesPerFrame;
 	  
-	  int32 BytesToWrite = 0;
-	  if(ByteToLock  > TargetCursor)
-	    {
-	      BytesToWrite = (SoundOutput.SecondaryBufferSize - ByteToLock);
-	      BytesToWrite += TargetCursor;
-	    }
-	  else
-	    {
-	      BytesToWrite = TargetCursor - ByteToLock;
-	    }
-	  SDL_UnlockAudio();
-      
-	  game_sound_output_buffer SoundBuffer = {};
-	  SoundBuffer.SamplesPerSec = SoundOutput.SamplesPerSec;
-	  // NOTE(l4v): For 30fps
-	  SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;
-	  SoundBuffer.Samples = Samples;
-      
-	  game_offscreen_buffer Buffer = {};
-	  Buffer.Memory = GlobalBackbuffer.Memory;
-	  Buffer.Width = GlobalBackbuffer.Width;
-	  Buffer.Height = GlobalBackbuffer.Height;
-	  Buffer.Pitch = GlobalBackbuffer.Pitch;
-	  Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
-	  GameUpdateAndRender(&GameMemory, Input, &Buffer, &SoundBuffer);
-
-	  int32 UnwrappedWriteCursor = GlobalAudioRingBuffer.WriteCursor;
-	  if(GlobalAudioRingBuffer.WriteCursor < GlobalAudioRingBuffer.PlayCursor)
-	    {
-	      UnwrappedWriteCursor += GlobalAudioRingBuffer.Size;
-	    }
-	  AudioLatencyBytes = UnwrappedWriteCursor - GlobalAudioRingBuffer.PlayCursor;
-	  AudioLatencySeconds = ((real32)AudioLatencyBytes / (real32)SoundOutput.BytesPerSample) /
-	    ((real32)SoundOutput.SamplesPerSec);
-
-	  printf("AUDIO: PC: %dB, WC: %dB, DELTA: %dB / %fs\n", GlobalAudioRingBuffer.PlayCursor,
-		 GlobalAudioRingBuffer.WriteCursor, AudioLatencyBytes, AudioLatencySeconds);
-	  SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite,
-			     &SoundBuffer);
-
-	  // NOTE(l4v): Timing
-	  // -----------------
-	  int64 WorkCounter = SDLGetWallClock();
-	  real32 WorkSecondsElapsed = SDLGetSecondsElapsed(LastCounter,
-							   WorkCounter);
-	  real32 SecondsElapsedForFrame = WorkSecondsElapsed;
-	  if(SecondsElapsedForFrame < TargetSecondsPerFrame)
-	    {
-	      while(SecondsElapsedForFrame < TargetSecondsPerFrame)
+	      /* NOTE(l4v): 
+		 SafeWriteCursor is the position of the write cursor on
+		 the audio card + some "safety byte margin" (how much variability
+		 we think there is in output timing
+	      */
+	      int32 SafeWriteCursor = GlobalAudioRingBuffer.WriteCursor;
+	      if(SafeWriteCursor < GlobalAudioRingBuffer.PlayCursor)
 		{
-
-		  // TODO(l4v): Look at nanosleep, poll, etc, because
-		  // of sleep granularity
-		  uint32 MSToSleepFor = (uint32)(1000.0f *
-						 (TargetSecondsPerFrame -
-						  SecondsElapsedForFrame));
-		  SDL_Delay(MSToSleepFor);
-		  SecondsElapsedForFrame =
-		    SDLGetSecondsElapsed(LastCounter,
-					 SDLGetWallClock());
+		  SafeWriteCursor += SoundOutput.SafetyBytes;
 		}
-	    }
-	  else
-	    {
-	      // TODO(l4v): Missed frame rate!!!
-	      // TODO(l4v): Logging
-	    }
-	  int64 EndCounter = SDLGetWallClock();
-	  real32 MSPerFrame = 1000.0f * SDLGetSecondsElapsed(LastCounter,
-							     EndCounter);
-	  real32 SPerFrame = SDLGetSecondsElapsed(LastCounter, EndCounter);
-	  LastCounter = EndCounter;
-	  printf("%f[ms/f]\n", MSPerFrame);
+	      //Assert(SafeWriteCursor > GlobalAudioRingBuffer.PlayCursor);
+	      // NOTE(l4v): The audio card is considered latent if the SafeWriteCursor
+	      // is after where we expect the frame flip
+	      bool32 AudioCardIsLowLatency = (SafeWriteCursor < ExpectedFrameBoundaryByte);
 
+	      // NOTE(l4v): Different audio sync calculations based on whether
+	      // the audio card is relatively latent or not
+	      int32 TargetCursor = 0;
+	      if(AudioCardIsLowLatency)
+		{
+		  TargetCursor = (ExpectedFrameBoundaryByte + ExpectedSoundBytesPerFrame);
+		}
+	      else
+		{
+		  TargetCursor = (GlobalAudioRingBuffer.WriteCursor + ExpectedSoundBytesPerFrame + 
+				  SoundOutput.SafetyBytes);
+		}
+	      TargetCursor = TargetCursor % SoundOutput.SecondaryBufferSize;
+	  
+	      int32 BytesToWrite = 0;
+	      if(ByteToLock  > TargetCursor)
+		{
+		  BytesToWrite = (SoundOutput.SecondaryBufferSize - ByteToLock);
+		  BytesToWrite += TargetCursor;
+		}
+	      else
+		{
+		  BytesToWrite = TargetCursor - ByteToLock;
+		}
+	      SDL_UnlockAudio();
 
-	  // NOTE(l4v): Testing drawing
-	  // --------------------------
-	  glClearColor(0.8f, 0.0f, 0.8f, 1.0f);
-	  glClear(GL_COLOR_BUFFER_BIT);
+	  
+	      game_sound_output_buffer SoundBuffer = {};
+	      SoundBuffer.SamplesPerSec = SoundOutput.SamplesPerSec;
+	      SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;
+	      SoundBuffer.Samples = Samples;
+	  
+	      GameGetSoundSamples(&GameMemory, &SoundBuffer);
+	  
+#if INTERNAL_BUILD
+	      sdl_debug_time_marker* Marker = &DebugMarker[DebugLastMarkerIndex];
+	      Marker->OutputPlayCursor = GlobalAudioRingBuffer.PlayCursor;
+	      Marker->OutputWriteCursor = GlobalAudioRingBuffer.WriteCursor;
+	      Marker->OutputLocation = ByteToLock;
+	      Marker->OutputByteCount = BytesToWrite;
+	      Marker->ExpectedFlipPlayCursor = ExpectedFrameBoundaryByte;
+	  
+	      int32 UnwrappedWriteCursor = GlobalAudioRingBuffer.WriteCursor;
+	      if(GlobalAudioRingBuffer.WriteCursor < GlobalAudioRingBuffer.PlayCursor)
+		{
+		  UnwrappedWriteCursor += GlobalAudioRingBuffer.Size;
+		}
+	      AudioLatencyBytes = UnwrappedWriteCursor - GlobalAudioRingBuffer.PlayCursor;
+	      AudioLatencySeconds = ((real32)AudioLatencyBytes / (real32)SoundOutput.BytesPerSample) /
+		((real32)SoundOutput.SamplesPerSec);
 
-	  glBindTexture(GL_TEXTURE_2D, texture);
-      
-	  glUseProgram(ShaderProgram);
-	  glBindVertexArray(VAO);
-	  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	      printf("AUDIO: PC: %dB, WC: %dB, DELTA: %dB / %fs\n", GlobalAudioRingBuffer.PlayCursor,
+		     GlobalAudioRingBuffer.WriteCursor, AudioLatencyBytes, AudioLatencySeconds);
+#endif
+	  
+	      SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite,
+				 &SoundBuffer);
+
+	      // NOTE(l4v): Timing
+	      // -----------------
+	      int64 WorkCounter = SDLGetWallClock();
+	      real32 WorkSecondsElapsed = SDLGetSecondsElapsed(LastCounter,
+							       WorkCounter);
+	      real32 SecondsElapsedForFrame = WorkSecondsElapsed;
+	      if(SecondsElapsedForFrame < TargetSecondsPerFrame)
+		{
+		  while(SecondsElapsedForFrame < TargetSecondsPerFrame)
+		    {
+
+		      // TODO(l4v): Look at nanosleep, poll, etc, because
+		      // of sleep granularity
+		      uint32 MSToSleepFor = (uint32)(1000.0f *
+						     (TargetSecondsPerFrame -
+						      SecondsElapsedForFrame));
+		      SDL_Delay(MSToSleepFor);
+		      SecondsElapsedForFrame =
+			SDLGetSecondsElapsed(LastCounter,
+					     SDLGetWallClock());
+		    }
+		}
+	      else
+		{
+		  // TODO(l4v): Missed frame rate!!!
+		  // TODO(l4v): Logging
+		}
+	      int64 EndCounter = SDLGetWallClock();
+	      real32 MSPerFrame = 1000.0f * SDLGetSecondsElapsed(LastCounter,
+								 EndCounter);
+	      real32 SPerFrame = SDLGetSecondsElapsed(LastCounter, EndCounter);
+	      LastCounter = EndCounter;
+	      printf("%f[ms/f]\n", MSPerFrame);
 
 	  
 #if INTERNAL_BUILD
-	  // NOTE(l4v): Debug code
-	    SDLDebugSyncDisplay(DebugLastMarkerIndex, DebugMarker, &SoundOutput,
-				&GlobalBackbuffer);
-	   
-	  DebugMarker[DebugLastMarkerIndex].PlayCursor = GlobalAudioRingBuffer.PlayCursor;
-	  DebugMarker[DebugLastMarkerIndex].WriteCursor = GlobalAudioRingBuffer.WriteCursor;
-	  if(DebugLastMarkerIndex++ >= ArrayCount(DebugLastPlayCursor))
-	    {
-	      DebugLastMarkerIndex = 0;
-	    }
+	      // NOTE(l4v): Debug code
+	      // TODO(l4v): DebugLastMarkerIndex is wrong on the 0th index
+	      SDLDebugSyncDisplay(DebugLastMarkerIndex, DebugMarker, DebugLastMarkerIndex - 1,
+				  &SoundOutput, &GlobalBackbuffer);
+#endif
+	      // NOTE(l4v): Testing drawing
+	      // --------------------------
+	      glClearColor(0.8f, 0.0f, 0.8f, 1.0f);
+	      glClear(GL_COLOR_BUFFER_BIT);
+
+	      glBindTexture(GL_TEXTURE_2D, texture);
+      
+	      glUseProgram(ShaderProgram);
+	      glBindVertexArray(VAO);
+	      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	      SDL_GL_SwapWindow(Window);
+
+#if INTERNAL_BUILD
+	      {
+		DebugMarker[DebugLastMarkerIndex].FlipPlayCursor = GlobalAudioRingBuffer.PlayCursor;
+		DebugMarker[DebugLastMarkerIndex].FlipWriteCursor = GlobalAudioRingBuffer.WriteCursor;
+	      }
 #endif	  
-	  SDL_GL_SwapWindow(Window);
 	  
-	  game_input* Temp = NewInput;
-	  NewInput = OldInput;
-	  OldInput = Temp;
-	  // TODO(l4v): Should they be cleared?
+	      game_input* Temp = NewInput;
+	      NewInput = OldInput;
+	      OldInput = Temp;
+	      // TODO(l4v): Should they be cleared?
 	  
-	  uint64 EndCycleCount = _rdtsc();
-	  uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
-	  LastCycleCount = EndCycleCount;
+	      uint64 EndCycleCount = _rdtsc();
+	      uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
+	      LastCycleCount = EndCycleCount;
+
+#if INTERNAL_BUILD
+	      ++DebugLastMarkerIndex;
+	      if(DebugLastMarkerIndex >= ArrayCount(DebugLastPlayCursor))
+		{
+		  DebugLastMarkerIndex = 0;
+		}
+#endif
+	  
+	    }
 	}
     }
   else
