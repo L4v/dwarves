@@ -843,6 +843,7 @@ int main(void)
       
       uint64 LastCounter = SDLGetWallClock();
       uint64 LastCycleCount = _rdtsc();
+      uint64 FlipWallClock = SDLGetWallClock();
   
       game_input Input[2];
       game_input* NewInput = &Input[0];
@@ -1087,12 +1088,18 @@ int main(void)
 	      Buffer.Pitch = GlobalBackbuffer.Pitch;
 	      Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
 	      GameUpdateAndRender(&GameMemory, Input, &Buffer);
-	  
+
+	      uint64 AudioWallClock = SDLGetWallClock();
+	      real32 FromBeginToAudioSeconds = SDLGetSecondsElapsed(FlipWallClock, AudioWallClock);
+	      
 	      SDL_LockAudio();
 	      int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample)
 		% SoundOutput.SecondaryBufferSize;
 	      int32 ExpectedSoundBytesPerFrame = (SoundOutput.SamplesPerSec * SoundOutput.BytesPerSample) /
 		GameUpdateHz;
+	      real32 SecondsLeftUntilFlip = TargetSecondsPerFrame - FromBeginToAudioSeconds;
+	      int32 ExpectedBytesUntilFlip = (int32)((SecondsLeftUntilFlip / TargetSecondsPerFrame) *
+						     (real32)ExpectedSoundBytesPerFrame);
 	      int32 ExpectedFrameBoundaryByte = GlobalAudioRingBuffer.PlayCursor + ExpectedSoundBytesPerFrame;
 	  
 	      /* NOTE(l4v): 
@@ -1221,6 +1228,7 @@ int main(void)
 	      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	      SDL_GL_SwapWindow(Window);
+	      FlipWallClock = SDLGetWallClock();
 
 #if INTERNAL_BUILD
 	      {
