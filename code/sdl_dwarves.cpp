@@ -486,58 +486,6 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 	  }
 	if(!(Event->key.repeat))
 	  {
-#if 0
-	    if(Keycode == SDLK_w)
-	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveUp,
-					     IsDown);
-	      }
-	    else if(Keycode == SDLK_a)
-	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveLeft,
-					     IsDown);
-	      }
-	    else if(Keycode == SDLK_s)
-	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveDown,
-					     IsDown);
-	      }
-	    else if(Keycode == SDLK_d)
-	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->MoveRight,
-					     IsDown);
-	      }
-	    else if(Keycode == SDLK_q)
-	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->LeftShoulder,
-					     IsDown);
-	      }
-	    else if(Keycode == SDLK_e)
-	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->RightShoulder,
-					     IsDown);
-	      }
-	    else if(Keycode == SDLK_UP)
-	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionUp,
-					     IsDown);
-	      }
-	    else if(Keycode == SDLK_LEFT)
-	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionLeft,
-					     IsDown);
-	      }
-	    else if(Keycode == SDLK_DOWN)
-	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionDown,
-					     IsDown);
-	      }
-	    else if(Keycode == SDLK_RIGHT)
-	      {
-		SDLProcessGameKeyboardButton(&NewKeyboardController->ActionRight,
-					     IsDown);
-	      }
-#endif
 	    if(Keycode == SDLK_ESCAPE)
 	      {
 		SDLProcessGameKeyboardButton(&NewKeyboardController->Back,
@@ -579,7 +527,6 @@ int main(void)
   // NOTE(l4v): Temporary
   #define MonitorRefreshHz 60
   #define GameUpdateHz MonitorRefreshHz / 2
-  #define FramesOfAudioLatency 2
   
   GlobalPerfCountFrequency = SDL_GetPerformanceFrequency();
   
@@ -665,9 +612,6 @@ int main(void)
 
   // NOTE(l4v): Enable z-buffer
   // glEnable(GL_DEPTH_TEST);
-
-  uint64 LastCounter = SDLGetWallClock();
-  uint64 LastCycleCount = _rdtsc();
 
   const char* VertexShaderSource = LoadShader("../shaders/triangle.vs");
   const char* FragmentShaderSource = LoadShader("../shaders/triangle.fs");
@@ -771,15 +715,7 @@ int main(void)
 			-1,
 			0);
   GlobalBackbuffer.Pitch = GlobalBackbuffer.Width * GlobalBackbuffer.BytesPerPixel;
-
-
-  game_input Input[2];
-  game_input* NewInput = &Input[0];
-  game_input* OldInput = &Input[1];
-
-  *NewInput = {};
-  *OldInput = {};
-
+  
   game_memory GameMemory = {};
 
 #if INTERNAL
@@ -804,10 +740,24 @@ int main(void)
   
   if(Samples && GameMemory.PermanentStorage && GameMemory.TransientStorage)
     {
+      
+      uint64 LastCounter = SDLGetWallClock();
+      uint64 LastCycleCount = _rdtsc();
+  
+      game_input Input[2];
+      game_input* NewInput = &Input[0];
+      game_input* OldInput = &Input[1];
+
+      *NewInput = {};
+      *OldInput = {};
+    
       bool32 Running = true;
       uint32 DebugLastMarkerIndex = 0;
       int32 DebugLastPlayCursor[GameUpdateHz / 2] = {};
       sdl_debug_time_marker DebugMarker[GameUpdateHz / 2] = {};
+      
+      int32 AudioLatencyBytes;
+      real32 AudioLatencySeconds;
       // NOTE(l4v): Main loop
       while(Running)
 	{
@@ -1025,9 +975,9 @@ int main(void)
 		  // TODO(l4v): The buttons are manually mapped for now, should get
 		  // mapping somehow???
 		  int16 StickX = SDL_JoystickGetAxis(JoystickHandles[ControllerIndex],
-							   0);
+						     0);
 		  int16 StickY = SDL_JoystickGetAxis(JoystickHandles[ControllerIndex],
-							   1);
+						     1);
 
 		  // NOTE(l4v): Normalizing the value and checking for deadzone
 		  NewController->StickAverageX =
@@ -1038,29 +988,29 @@ int main(void)
 		  // TODO(l4v): Min / max macros
 	      
 		  SDLProcessGameJoystickButton(&(OldController->ActionDown),
-						 &(NewController->ActionDown),
-						 JoystickHandles[ControllerIndex],
-						 0);
+					       &(NewController->ActionDown),
+					       JoystickHandles[ControllerIndex],
+					       0);
 		  SDLProcessGameJoystickButton(&(OldController->ActionRight),
-						 &(NewController->ActionRight),
-						 JoystickHandles[ControllerIndex],
-						 1);
+					       &(NewController->ActionRight),
+					       JoystickHandles[ControllerIndex],
+					       1);
 		  SDLProcessGameJoystickButton(&(OldController->ActionLeft),
-						 &(NewController->ActionLeft),
-						 JoystickHandles[ControllerIndex],
-						 2);
+					       &(NewController->ActionLeft),
+					       JoystickHandles[ControllerIndex],
+					       2);
 		  SDLProcessGameJoystickButton(&(OldController->ActionUp),
-						 &(NewController->ActionUp),
-						 JoystickHandles[ControllerIndex],
-						 3);
+					       &(NewController->ActionUp),
+					       JoystickHandles[ControllerIndex],
+					       3);
 		  SDLProcessGameJoystickButton(&(OldController->LeftShoulder),
-						 &(NewController->LeftShoulder),
-						 JoystickHandles[ControllerIndex],
-						 4);
+					       &(NewController->LeftShoulder),
+					       JoystickHandles[ControllerIndex],
+					       4);
 		  SDLProcessGameJoystickButton(&(OldController->RightShoulder),
-						 &(NewController->RightShoulder),
-						 JoystickHandles[ControllerIndex],
-						 5);
+					       &(NewController->RightShoulder),
+					       JoystickHandles[ControllerIndex],
+					       5);
 		}
 	      else
 		{
@@ -1074,11 +1024,41 @@ int main(void)
 	  glGenerateMipmap(GL_TEXTURE_2D);
       
 	  SDL_LockAudio();
-	  int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) % SoundOutput.SecondaryBufferSize;
-	  int32 TargetCursor =
-	    ((GlobalAudioRingBuffer.PlayCursor +
-	      (SoundOutput.LatencySampleCount * SoundOutput.BytesPerSample))
-	     % SoundOutput.SecondaryBufferSize);
+	  int32 ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample)
+	    % SoundOutput.SecondaryBufferSize;
+	  int32 ExpectedSoundBytesPerFrame = ;
+	  SoundOutput.SafetyBytes = ;
+	  int32 ExpectedFrameBoundaryByte = GlobalAudioRingBuffer.PlayCursor + ExpectedSoundBytesperFrame;
+	  
+	  /* NOTE(l4v): 
+	     SafeWriteCursor is the position of the write cursor on
+	     the audio card + some "safety byte margin" (how much variability
+	     we think there is in output timing
+	  */
+	  int32 SafeWriteCursor = GlobalAudioRingBuffer.WriteCursor;
+	  if(SafeWriteCursor < GlobalAudioRingBuffer.PlayCursor)
+	    {
+	      SafeWriteCursor += SoundOutput.SafetyBytes;
+	    }
+	  Assert(SafeWriteCursor >= GlobalAudioRingBuffer.PlayCursor);
+      // NOTE(l4v): The audio card is considered latent if the SafeWriteCursor
+      // is after where we expect the frame flip
+      bool32 AudioCardIsLowLatency = (SafeWriteCursor < ExpectedFrameBoundaryByte);
+
+      // NOTE(l4v): Different audio sync calculations based on whether
+      // the audio card is relatively latent or not
+      int32 TargetCursor = 0;
+      if(AudioCardIsLowLatency)
+	    {
+	      TargetCursor = (ExpectedFrameBoundaryByte + ExpectedSoundBytesPerFrame);
+	    }
+	  else
+	    {
+	      TargetCursor = (GlobalAudioRingBuffer.WriteCursor + ExpectedSoundBytesPerFrame + 
+			      SoundOutput.SafetySampleBytes);
+	    }
+	  TargetCursor = TargetCursor % SoundOutput.SecondaryBufferSize;
+	  
 	  int32 BytesToWrite = 0;
 	  if(ByteToLock  > TargetCursor)
 	    {
@@ -1104,7 +1084,18 @@ int main(void)
 	  Buffer.Pitch = GlobalBackbuffer.Pitch;
 	  Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
 	  GameUpdateAndRender(&GameMemory, Input, &Buffer, &SoundBuffer);
-      
+
+	  int32 UnwrappedWriteCursor = GlobalAudioRingBuffer.WriteCursor;
+	  if(GlobalAudioRingBuffer.WriteCursor < GlobalAudioRingBuffer.PlayCursor)
+	    {
+	      UnwrappedWriteCursor += GlobalAudioRingBuffer.Size;
+	    }
+	  AudioLatencyBytes = UnwrappedWriteCursor - GlobalAudioRingBuffer.PlayCursor;
+	  AudioLatencySeconds = ((real32)AudioLatencyBytes / (real32)SoundOutput.BytesPerSample) /
+	    ((real32)SoundOutput.SamplesPerSec);
+
+	  printf("AUDIO: PC: %dB, WC: %dB, DELTA: %dB / %fs\n", GlobalAudioRingBuffer.PlayCursor,
+		 GlobalAudioRingBuffer.WriteCursor, AudioLatencyBytes, AudioLatencySeconds);
 	  SDLFillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite,
 			     &SoundBuffer);
 
@@ -1166,8 +1157,7 @@ int main(void)
 	    {
 	      DebugLastMarkerIndex = 0;
 	    }
-#endif
-	  
+#endif	  
 	  SDL_GL_SwapWindow(Window);
 	  
 	  game_input* Temp = NewInput;
@@ -1190,7 +1180,9 @@ int main(void)
   // system, thus to be safe, audio should be closed
   SDL_CloseAudio();
   if(GlobalBackbuffer.Memory)
-    munmap(GlobalBackbuffer.Memory, Width * Height * 4);
+    {
+      munmap(GlobalBackbuffer.Memory, Width * Height * 4);
+    }
   
   return 0;
 }

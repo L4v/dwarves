@@ -75,3 +75,6 @@
 (setq compile-command "./build.sh")
 (global-set-key (kbd "<f5>") 'compile)
 
+;; Show line numbers
+(when (version<= "26.0.50" emacs-version )
+  (global-display-line-numbers-mode))
