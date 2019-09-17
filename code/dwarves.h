@@ -209,6 +209,8 @@ struct game_state
   int32 ToneHz;
   int32 BlueOffset;
   int32 GreenOffset;
+  
+  real32 tSine;
 };
 
 #define DWARVES_H

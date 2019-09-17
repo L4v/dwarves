@@ -291,23 +291,15 @@ struct sdl_game_code
 internal sdl_game_code
 SDLLoadGameCode()
 {
+  system("cp dwarves.so dwarves_temp.so");
   sdl_game_code Result = {};
-  
-  Result.GameCodeDyLib = dlopen("dwarves.so", RTLD_LAZY | RTLD_GLOBAL);
+  Result.GameCodeDyLib = dlopen("dwarves_temp.so", RTLD_LAZY | RTLD_GLOBAL);
   if(Result.GameCodeDyLib)
     {
       Result.UpdateAndRender = (game_update_and_render *)
 	dlsym(Result.GameCodeDyLib, "GameUpdateAndRender");
       Result.GetSoundSamples = (game_get_sound_samples *)
 	dlsym(Result.GameCodeDyLib, "GameGetSoundSamples");
-
-      char* Err = dlerror();
-      printf("%s\n", Err);
-      
-      if(!Result.UpdateAndRender)
-	printf("UPDATE INVALID\n");
-      if(!Result.GetSoundSamples)
-	printf("S INVALID\n");
       
       Result.IsValid = (Result.UpdateAndRender && Result.GetSoundSamples);
     }
@@ -315,12 +307,29 @@ SDLLoadGameCode()
   if(!Result.IsValid)
     {
       printf("Game code was not loaded properly\n");
+      char* Err = dlerror();
+      printf("Dynamic linking error:\n%s\n", Err);
       Result.UpdateAndRender = GameUpdateAndRenderStub;
       Result.GetSoundSamples = GameGetSoundSamplesStub;
     }
   
   return Result;
 }
+
+internal void
+SDLUnloadGameCode(sdl_game_code* GameCode)
+{
+  if(dlclose(GameCode->GameCodeDyLib))
+    {
+      printf("Game code not unloaded properly\n");
+      char* Err = dlerror();
+      printf("Dynamic linking error:\n%s\n", Err);
+    }
+  GameCode->IsValid = false;
+  GameCode->UpdateAndRender = GameUpdateAndRenderStub;
+  GameCode->GetSoundSamples = GameGetSoundSamplesStub;
+}
+
 
 internal void
 SDLAudioCallback(void* UserData, uint8* AudioData, int32 Length)
@@ -610,11 +619,7 @@ SDLGetSecondsElapsed(int64 Start, int64 End)
 }
 
 int main(void)
-{
-
-  // NOTE(l4v): Loading the game code dynamically from dl
-  sdl_game_code Game = SDLLoadGameCode();
-  
+{  
   // TODO(l4v): Check this with the system automatically
   // NOTE(l4v): Temporary
   const int32 MonitorRefreshHz = 60;
@@ -865,10 +870,21 @@ int main(void)
 
       // TODO(l4v): Make better pause
       GlobalPause = false;
+
+      // NOTE(l4v): Loading the game code dynamically from dl
+      sdl_game_code Game = SDLLoadGameCode();
+      uint32 LoadCounter = 120;
       
       // NOTE(l4v): Main loop
       while(Running)
 	{
+	  if(LoadCounter++ > 120)
+	    {
+	      SDLUnloadGameCode(&Game);
+	      Game = SDLLoadGameCode();
+	      LoadCounter = 0;
+	    }
+	  
 	  // TODO(l4v): Zeroing macro
 	  // TODO(l4v): Not poll for disconnected controllers
 	  

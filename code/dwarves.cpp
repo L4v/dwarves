@@ -1,25 +1,24 @@
 #include "dwarves.h"
 
 internal void
-GameOutputSound(game_sound_output_buffer* SoundBuffer, int32 ToneHz)
+GameOutputSound(game_state* GameState, game_sound_output_buffer* SoundBuffer)
 {
-  local_persist real32 tSine = 0.0f;
   int16 ToneVolume = 3000;
-  int32 WavePeriod = SoundBuffer->SamplesPerSec / ToneHz;
+  int32 WavePeriod = SoundBuffer->SamplesPerSec / GameState->ToneHz;
   
   int16 *Samples = SoundBuffer->Samples;
   for(int32 SampleIndex = 0;
       SampleIndex < SoundBuffer->SampleCount;
       ++SampleIndex)
     {
-      real32 SineValue = sinf(tSine);
+      real32 SineValue = sinf(GameState->tSine);
       int16 SampleValue = (int16)(SineValue * ToneVolume);
       *Samples++ = SampleValue;
       *Samples++ = SampleValue;
-      tSine += 2.0f * Pi32 * 1.0f / (real32)WavePeriod;
-      if(tSine >= 2.0f * Pi32)
+      GameState->tSine += 2.0f * Pi32 * 1.0f / (real32)WavePeriod;
+      if(GameState->tSine >= 2.0f * Pi32)
 	{
-	  tSine -= 2.0f * Pi32;
+	  GameState->tSine -= 2.0f * Pi32;
 	}
     }
 }
@@ -61,9 +60,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
   game_state* GameState = (game_state*)Memory->PermanentStorage;
   if(!Memory->IsInitialized)
     {
-      GameState->ToneHz = 256;
+      GameState->ToneHz = 512;
       GameState->BlueOffset = 0;
       GameState->GreenOffset = 0;
+      GameState->tSine = 0.0f;
 #if 0
       char Filename[32] = "../code/";
       strcat(Filename, __FILE__);
@@ -127,5 +127,5 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples)
 {
   game_state* GameState = (game_state*)Memory->PermanentStorage;
-  GameOutputSound(SoundBuffer, GameState->ToneHz);
+  GameOutputSound(GameState, SoundBuffer);
 }

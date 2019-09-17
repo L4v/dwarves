@@ -3,11 +3,11 @@ Archive member included to satisfy reference by file (symbol)
 /usr/lib/libc_nonshared.a(elf-init.oS)
                               /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o (__libc_csu_init)
 /usr/lib/libc_nonshared.a(stat.oS)
-                              /tmp/sdl_dwarves-aee42c.o (stat)
+                              /tmp/sdl_dwarves-ddf038.o (stat)
 
 Merging program properties
 
-Removed property 0xc0000002 to merge /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o (0x3) and /tmp/sdl_dwarves-aee42c.o (not found)
+Removed property 0xc0000002 to merge /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o (0x3) and /tmp/sdl_dwarves-ddf038.o (not found)
 
 Discarded input sections
 
@@ -29,8 +29,8 @@ Discarded input sections
  .note.gnu.property
                 0x0000000000000000       0x20 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
  .note.GNU-stack
-                0x0000000000000000        0x0 /tmp/sdl_dwarves-aee42c.o
- .llvm_addrsig  0x0000000000000000       0x87 /tmp/sdl_dwarves-aee42c.o
+                0x0000000000000000        0x0 /tmp/sdl_dwarves-ddf038.o
+ .llvm_addrsig  0x0000000000000000       0x8d /tmp/sdl_dwarves-ddf038.o
  .data          0x0000000000000000        0x0 /usr/lib/libc_nonshared.a(elf-init.oS)
  .bss           0x0000000000000000        0x0 /usr/lib/libc_nonshared.a(elf-init.oS)
  .note.GNU-stack
@@ -68,7 +68,7 @@ Linker script and memory map
 LOAD /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
 LOAD /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crti.o
 LOAD /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
-LOAD /tmp/sdl_dwarves-aee42c.o
+LOAD /tmp/sdl_dwarves-ddf038.o
 LOAD /usr/lib/libGL.so
 LOAD /usr/lib/libGLEW.so
 LOAD /usr/lib/libSDL2.so
@@ -119,68 +119,68 @@ LOAD /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crtn.o
 .note.gnu.build-id
  *(.note.gnu.build-id)
 
-.hash           0x0000000000000368      0x274
+.hash           0x0000000000000368      0x27c
  *(.hash)
- .hash          0x0000000000000368      0x274 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .hash          0x0000000000000368      0x27c /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
 
-.gnu.hash       0x00000000000005e0       0x30
+.gnu.hash       0x00000000000005e8       0x30
  *(.gnu.hash)
- .gnu.hash      0x00000000000005e0       0x30 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .gnu.hash      0x00000000000005e8       0x30 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
 
-.dynsym         0x0000000000000610      0x840
+.dynsym         0x0000000000000618      0x870
  *(.dynsym)
- .dynsym        0x0000000000000610      0x840 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .dynsym        0x0000000000000618      0x870 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
 
-.dynstr         0x0000000000000e50      0x5c9
+.dynstr         0x0000000000000e88      0x5d8
  *(.dynstr)
- .dynstr        0x0000000000000e50      0x5c9 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .dynstr        0x0000000000000e88      0x5d8 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
 
-.gnu.version    0x000000000000141a       0xb0
+.gnu.version    0x0000000000001460       0xb4
  *(.gnu.version)
- .gnu.version   0x000000000000141a       0xb0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .gnu.version   0x0000000000001460       0xb4 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
 
-.gnu.version_d  0x00000000000014d0        0x0
+.gnu.version_d  0x0000000000001518        0x0
  *(.gnu.version_d)
  .gnu.version_d
-                0x00000000000014d0        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+                0x0000000000001518        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
 
-.gnu.version_r  0x00000000000014d0       0x80
+.gnu.version_r  0x0000000000001518       0x80
  *(.gnu.version_r)
  .gnu.version_r
-                0x00000000000014d0       0x80 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+                0x0000000000001518       0x80 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
 
-.rela.dyn       0x0000000000001550      0x2d0
+.rela.dyn       0x0000000000001598      0x2d0
  *(.rela.init)
  *(.rela.text .rela.text.* .rela.gnu.linkonce.t.*)
- .rela.text     0x0000000000001550        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .rela.text     0x0000000000001598        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
  *(.rela.fini)
  *(.rela.rodata .rela.rodata.* .rela.gnu.linkonce.r.*)
  *(.rela.data .rela.data.* .rela.gnu.linkonce.d.*)
  .rela.data.rel.ro
-                0x0000000000001550        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+                0x0000000000001598        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
  .rela.data.rel.local
-                0x0000000000001550       0x18 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+                0x0000000000001598       0x18 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
  *(.rela.tdata .rela.tdata.* .rela.gnu.linkonce.td.*)
  *(.rela.tbss .rela.tbss.* .rela.gnu.linkonce.tb.*)
  *(.rela.ctors)
  *(.rela.dtors)
  *(.rela.got)
- .rela.got      0x0000000000001568      0x288 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .rela.got      0x00000000000015b0      0x288 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
  *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*)
- .rela.bss      0x00000000000017f0        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .rela.bss      0x0000000000001838        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
  *(.rela.ldata .rela.ldata.* .rela.gnu.linkonce.l.*)
  *(.rela.lbss .rela.lbss.* .rela.gnu.linkonce.lb.*)
  *(.rela.lrodata .rela.lrodata.* .rela.gnu.linkonce.lr.*)
  *(.rela.ifunc)
- .rela.ifunc    0x00000000000017f0        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .rela.ifunc    0x0000000000001838        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
  .rela.fini_array
-                0x00000000000017f0       0x18 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+                0x0000000000001838       0x18 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
  .rela.init_array
-                0x0000000000001808       0x18 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+                0x0000000000001850       0x18 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
 
-.rela.plt       0x0000000000001820      0x558
+.rela.plt       0x0000000000001868      0x588
  *(.rela.plt)
- .rela.plt      0x0000000000001820      0x558 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .rela.plt      0x0000000000001868      0x588 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
                 [!provide]                        PROVIDE (__rela_iplt_start = .)
  *(.rela.iplt)
                 [!provide]                        PROVIDE (__rela_iplt_end = .)
@@ -192,149 +192,152 @@ LOAD /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crtn.o
                 0x0000000000002000                _init
  .init          0x0000000000002016        0x5 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crtn.o
 
-.plt            0x0000000000002020      0x3a0
+.plt            0x0000000000002020      0x3c0
  *(.plt)
- .plt           0x0000000000002020      0x3a0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .plt           0x0000000000002020      0x3c0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
  *(.iplt)
 
-.plt.got        0x00000000000023c0        0x0
+.plt.got        0x00000000000023e0        0x0
  *(.plt.got)
- .plt.got       0x00000000000023c0        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .plt.got       0x00000000000023e0        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
 
-.plt.sec        0x00000000000023c0      0x390
+.plt.sec        0x00000000000023e0      0x3b0
  *(.plt.sec)
- .plt.sec       0x00000000000023c0      0x390 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
-                0x00000000000023c0                ftell@@GLIBC_2.2.5
-                0x00000000000023d0                printf@@GLIBC_2.2.5
-                0x00000000000023e0                SDL_CreateWindow
-                0x00000000000023f0                SDL_LockAudio
-                0x0000000000002400                glClear
-                0x0000000000002410                glViewport
-                0x0000000000002420                SDL_UnlockAudio
-                0x0000000000002430                SDL_HapticOpen
-                0x0000000000002440                SDL_GL_CreateContext
-                0x0000000000002450                write@@GLIBC_2.2.5
-                0x0000000000002460                glTexImage2D
-                0x0000000000002470                SDL_GetWindowSize
-                0x0000000000002480                SDL_GameControllerGetAttached
-                0x0000000000002490                SDL_JoystickOpen
-                0x00000000000024a0                SDL_GameControllerGetAxis
-                0x00000000000024b0                memset@@GLIBC_2.2.5
-                0x00000000000024c0                dlerror@@GLIBC_2.2.5
-                0x00000000000024d0                munmap@@GLIBC_2.2.5
-                0x00000000000024e0                SDL_CloseAudio
-                0x00000000000024f0                SDL_PollEvent
-                0x0000000000002500                SDL_NumJoysticks
-                0x0000000000002510                calloc@@GLIBC_2.2.5
-                0x0000000000002520                SDL_Delay
-                0x0000000000002530                open@@GLIBC_2.2.5
-                0x0000000000002540                SDL_PauseAudio
-                0x0000000000002550                memcpy@@GLIBC_2.14
-                0x0000000000002560                glewInit
-                0x0000000000002570                SDL_GetPerformanceFrequency
-                0x0000000000002580                SDL_Init
-                0x0000000000002590                SDL_GameControllerOpen
-                0x00000000000025a0                SDL_JoystickGetAxis
-                0x00000000000025b0                SDL_GameControllerGetButton
-                0x00000000000025c0                fclose@@GLIBC_2.2.5
-                0x00000000000025d0                glDrawElements
-                0x00000000000025e0                __xstat@@GLIBC_2.2.5
-                0x00000000000025f0                fseek@@GLIBC_2.2.5
-                0x0000000000002600                __stack_chk_fail@@GLIBC_2.4
-                0x0000000000002610                SDL_JoystickGetAttached
-                0x0000000000002620                fopen@@GLIBC_2.2.5
-                0x0000000000002630                free@@GLIBC_2.2.5
-                0x0000000000002640                glBindTexture
-                0x0000000000002650                malloc@@GLIBC_2.2.5
-                0x0000000000002660                glTexParameteri
-                0x0000000000002670                glGenTextures
-                0x0000000000002680                SDL_GetPerformanceCounter
-                0x0000000000002690                SDL_GL_SwapWindow
-                0x00000000000026a0                read@@GLIBC_2.2.5
-                0x00000000000026b0                dlopen@@GLIBC_2.2.5
-                0x00000000000026c0                glClearColor
-                0x00000000000026d0                fread@@GLIBC_2.2.5
-                0x00000000000026e0                SDL_OpenAudio
-                0x00000000000026f0                SDL_JoystickGetButton
-                0x0000000000002700                SDL_GL_SetAttribute
-                0x0000000000002710                mmap@@GLIBC_2.2.5
-                0x0000000000002720                SDL_IsGameController
-                0x0000000000002730                dlsym@@GLIBC_2.2.5
-                0x0000000000002740                close@@GLIBC_2.2.5
+ .plt.sec       0x00000000000023e0      0x3b0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+                0x00000000000023e0                ftell@@GLIBC_2.2.5
+                0x00000000000023f0                printf@@GLIBC_2.2.5
+                0x0000000000002400                SDL_CreateWindow
+                0x0000000000002410                SDL_LockAudio
+                0x0000000000002420                glClear
+                0x0000000000002430                glViewport
+                0x0000000000002440                SDL_UnlockAudio
+                0x0000000000002450                SDL_HapticOpen
+                0x0000000000002460                SDL_GL_CreateContext
+                0x0000000000002470                write@@GLIBC_2.2.5
+                0x0000000000002480                glTexImage2D
+                0x0000000000002490                SDL_GetWindowSize
+                0x00000000000024a0                SDL_GameControllerGetAttached
+                0x00000000000024b0                SDL_JoystickOpen
+                0x00000000000024c0                SDL_GameControllerGetAxis
+                0x00000000000024d0                memset@@GLIBC_2.2.5
+                0x00000000000024e0                dlerror@@GLIBC_2.2.5
+                0x00000000000024f0                munmap@@GLIBC_2.2.5
+                0x0000000000002500                SDL_CloseAudio
+                0x0000000000002510                SDL_PollEvent
+                0x0000000000002520                SDL_NumJoysticks
+                0x0000000000002530                calloc@@GLIBC_2.2.5
+                0x0000000000002540                SDL_Delay
+                0x0000000000002550                open@@GLIBC_2.2.5
+                0x0000000000002560                dlclose@@GLIBC_2.2.5
+                0x0000000000002570                SDL_PauseAudio
+                0x0000000000002580                memcpy@@GLIBC_2.14
+                0x0000000000002590                system@@GLIBC_2.2.5
+                0x00000000000025a0                glewInit
+                0x00000000000025b0                SDL_GetPerformanceFrequency
+                0x00000000000025c0                SDL_Init
+                0x00000000000025d0                SDL_GameControllerOpen
+                0x00000000000025e0                SDL_JoystickGetAxis
+                0x00000000000025f0                SDL_GameControllerGetButton
+                0x0000000000002600                fclose@@GLIBC_2.2.5
+                0x0000000000002610                glDrawElements
+                0x0000000000002620                __xstat@@GLIBC_2.2.5
+                0x0000000000002630                fseek@@GLIBC_2.2.5
+                0x0000000000002640                __stack_chk_fail@@GLIBC_2.4
+                0x0000000000002650                SDL_JoystickGetAttached
+                0x0000000000002660                fopen@@GLIBC_2.2.5
+                0x0000000000002670                free@@GLIBC_2.2.5
+                0x0000000000002680                glBindTexture
+                0x0000000000002690                malloc@@GLIBC_2.2.5
+                0x00000000000026a0                glTexParameteri
+                0x00000000000026b0                glGenTextures
+                0x00000000000026c0                SDL_GetPerformanceCounter
+                0x00000000000026d0                SDL_GL_SwapWindow
+                0x00000000000026e0                read@@GLIBC_2.2.5
+                0x00000000000026f0                dlopen@@GLIBC_2.2.5
+                0x0000000000002700                glClearColor
+                0x0000000000002710                fread@@GLIBC_2.2.5
+                0x0000000000002720                SDL_OpenAudio
+                0x0000000000002730                SDL_JoystickGetButton
+                0x0000000000002740                SDL_GL_SetAttribute
+                0x0000000000002750                mmap@@GLIBC_2.2.5
+                0x0000000000002760                SDL_IsGameController
+                0x0000000000002770                dlsym@@GLIBC_2.2.5
+                0x0000000000002780                close@@GLIBC_2.2.5
 
-.text           0x0000000000002750     0x3634
+.text           0x0000000000002790     0x36f4
  *(.text.unlikely .text.*_unlikely .text.unlikely.*)
  *(.text.exit .text.exit.*)
  *(.text.startup .text.startup.*)
  *(.text.hot .text.hot.*)
  *(.text .stub .text.* .gnu.linkonce.t.*)
- .text          0x0000000000002750       0x2f /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
-                0x0000000000002750                _start
- *fill*         0x000000000000277f        0x1 
- .text          0x0000000000002780       0xc9 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
- *fill*         0x0000000000002849        0x7 
- .text          0x0000000000002850     0x349c /tmp/sdl_dwarves-aee42c.o
-                0x0000000000002850                GameUpdateAndRenderStub(game_memory*, game_input*, game_offscreen_buffer*)
-                0x0000000000002870                GameGetSoundSamplesStub(game_memory*, game_sound_output_buffer*)
-                0x0000000000002880                DEBUGPlatformReadEntireFile(char*)
-                0x0000000000002b30                DEBUGPlatformFreeFileMemory(void*)
-                0x0000000000002b60                DEBUGPlatformWriteEntireFile(char*, unsigned int, void*)
-                0x0000000000002c50                main
- *fill*         0x0000000000005cec        0x4 
- .text          0x0000000000005cf0       0x75 /usr/lib/libc_nonshared.a(elf-init.oS)
-                0x0000000000005cf0                __libc_csu_init
-                0x0000000000005d60                __libc_csu_fini
- *fill*         0x0000000000005d65        0xb 
- .text          0x0000000000005d70       0x14 /usr/lib/libc_nonshared.a(stat.oS)
-                0x0000000000005d70                __stat
-                0x0000000000005d70                stat
+ .text          0x0000000000002790       0x2f /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+                0x0000000000002790                _start
+ *fill*         0x00000000000027bf        0x1 
+ .text          0x00000000000027c0       0xc9 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
+ *fill*         0x0000000000002889        0x7 
+ .text          0x0000000000002890     0x355c /tmp/sdl_dwarves-ddf038.o
+                0x0000000000002890                GameUpdateAndRenderStub(game_memory*, game_input*, game_offscreen_buffer*)
+                0x00000000000028b0                GameGetSoundSamplesStub(game_memory*, game_sound_output_buffer*)
+                0x00000000000028c0                DEBUGPlatformReadEntireFile(char*)
+                0x0000000000002b70                DEBUGPlatformFreeFileMemory(void*)
+                0x0000000000002ba0                DEBUGPlatformWriteEntireFile(char*, unsigned int, void*)
+                0x0000000000002c90                main
+ *fill*         0x0000000000005dec        0x4 
+ .text          0x0000000000005df0       0x75 /usr/lib/libc_nonshared.a(elf-init.oS)
+                0x0000000000005df0                __libc_csu_init
+                0x0000000000005e60                __libc_csu_fini
+ *fill*         0x0000000000005e65        0xb 
+ .text          0x0000000000005e70       0x14 /usr/lib/libc_nonshared.a(stat.oS)
+                0x0000000000005e70                __stat
+                0x0000000000005e70                stat
  *(.gnu.warning)
 
-.fini           0x0000000000005d84        0xd
+.fini           0x0000000000005e84        0xd
  *(SORT_NONE(.fini))
- .fini          0x0000000000005d84        0x8 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crti.o
-                0x0000000000005d84                _fini
- .fini          0x0000000000005d8c        0x5 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crtn.o
+ .fini          0x0000000000005e84        0x8 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crti.o
+                0x0000000000005e84                _fini
+ .fini          0x0000000000005e8c        0x5 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crtn.o
                 [!provide]                        PROVIDE (__etext = .)
                 [!provide]                        PROVIDE (_etext = .)
                 [!provide]                        PROVIDE (etext = .)
                 0x0000000000006000                . = ALIGN (CONSTANT (MAXPAGESIZE))
                 0x0000000000006000                . = SEGMENT_START ("rodata-segment", (ALIGN (CONSTANT (MAXPAGESIZE)) + (. & (CONSTANT (MAXPAGESIZE) - 0x1))))
 
-.rodata         0x0000000000006000      0x3a8
+.rodata         0x0000000000006000      0x3e8
  *(.rodata .rodata.* .gnu.linkonce.r.*)
- .rodata.cst4   0x0000000000006000       0x20 /tmp/sdl_dwarves-aee42c.o
+ .rodata.cst4   0x0000000000006000       0x20 /tmp/sdl_dwarves-ddf038.o
  .rodata.str1.1
-                0x0000000000006020      0x320 /tmp/sdl_dwarves-aee42c.o
-                                        0x324 (size before relaxing)
- .rodata        0x0000000000006340       0x68 /tmp/sdl_dwarves-aee42c.o
+                0x0000000000006020      0x354 /tmp/sdl_dwarves-ddf038.o
+                                        0x364 (size before relaxing)
+ *fill*         0x0000000000006374        0xc 
+ .rodata        0x0000000000006380       0x68 /tmp/sdl_dwarves-ddf038.o
 
 .rodata1
  *(.rodata1)
 
-.eh_frame_hdr   0x00000000000063a8      0x104
+.eh_frame_hdr   0x00000000000063e8      0x10c
  *(.eh_frame_hdr)
- .eh_frame_hdr  0x00000000000063a8      0x104 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
-                0x00000000000063a8                __GNU_EH_FRAME_HDR
+ .eh_frame_hdr  0x00000000000063e8      0x10c /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+                0x00000000000063e8                __GNU_EH_FRAME_HDR
  *(.eh_frame_entry .eh_frame_entry.*)
 
-.eh_frame       0x00000000000064b0      0x418
+.eh_frame       0x00000000000064f8      0x438
  *(.eh_frame)
- .eh_frame      0x00000000000064b0       0x30 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .eh_frame      0x00000000000064f8       0x30 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
                                          0x2c (size before relaxing)
- *fill*         0x00000000000064e0        0x0 
- .eh_frame      0x00000000000064e0       0x28 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ *fill*         0x0000000000006528        0x0 
+ .eh_frame      0x0000000000006528       0x28 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
                                          0x40 (size before relaxing)
- .eh_frame      0x0000000000006508        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
- .eh_frame      0x0000000000006508       0x18 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .eh_frame      0x0000000000006550        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .eh_frame      0x0000000000006550       0x18 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
                                          0x30 (size before relaxing)
- .eh_frame      0x0000000000006520      0x330 /tmp/sdl_dwarves-aee42c.o
-                                        0x348 (size before relaxing)
- .eh_frame      0x0000000000006850       0x60 /usr/lib/libc_nonshared.a(elf-init.oS)
+ .eh_frame      0x0000000000006568      0x350 /tmp/sdl_dwarves-ddf038.o
+                                        0x368 (size before relaxing)
+ .eh_frame      0x00000000000068b8       0x60 /usr/lib/libc_nonshared.a(elf-init.oS)
                                          0x78 (size before relaxing)
- .eh_frame      0x00000000000068b0       0x14 /usr/lib/libc_nonshared.a(stat.oS)
+ .eh_frame      0x0000000000006918       0x14 /usr/lib/libc_nonshared.a(stat.oS)
                                          0x30 (size before relaxing)
- .eh_frame      0x00000000000068c4        0x4 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtendS.o
+ .eh_frame      0x000000000000692c        0x4 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtendS.o
  *(.eh_frame.*)
 
 .gcc_except_table
@@ -420,62 +423,62 @@ LOAD /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crtn.o
  *(.igot)
                 0x0000000000008fe8                . = DATA_SEGMENT_RELRO_END (., (SIZEOF (.got.plt) >= 0x18)?0x18:0x0)
 
-.got.plt        0x0000000000008000      0x1e0
+.got.plt        0x0000000000008000      0x1f0
  *(.got.plt)
- .got.plt       0x0000000000008000      0x1e0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .got.plt       0x0000000000008000      0x1f0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
                 0x0000000000008000                _GLOBAL_OFFSET_TABLE_
  *(.igot.plt)
 
-.data           0x00000000000081e0        0x8
+.data           0x00000000000081f0        0x8
  *(.data .data.* .gnu.linkonce.d.*)
  .data.rel.local
-                0x00000000000081e0        0x8 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
-                0x00000000000081e0                __dso_handle
+                0x00000000000081f0        0x8 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
+                0x00000000000081f0                __dso_handle
 
 .tm_clone_table
-                0x00000000000081e8        0x0
+                0x00000000000081f8        0x0
  .tm_clone_table
-                0x00000000000081e8        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
+                0x00000000000081f8        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
  .tm_clone_table
-                0x00000000000081e8        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtendS.o
+                0x00000000000081f8        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtendS.o
 
 .data1
  *(.data1)
-                0x00000000000081e8                _edata = .
+                0x00000000000081f8                _edata = .
                 [!provide]                        PROVIDE (edata = .)
-                0x00000000000081e8                . = .
-                0x00000000000081e8                __bss_start = .
+                0x00000000000081f8                . = .
+                0x00000000000081f8                __bss_start = .
 
-.bss            0x00000000000081f0       0xb0
+.bss            0x0000000000008200       0xb0
  *(.dynbss)
- .dynbss        0x00000000000081f0        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
+ .dynbss        0x0000000000008200        0x0 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
  *(.bss .bss.* .gnu.linkonce.b.*)
- .bss           0x00000000000081f0        0x1 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
- *fill*         0x00000000000081f1        0xf 
- .bss           0x0000000000008200       0xa0 /tmp/sdl_dwarves-aee42c.o
-                0x0000000000008200                ControllerHandles
-                0x0000000000008220                JoystickHandles
-                0x0000000000008240                RumbleHandles
+ .bss           0x0000000000008200        0x1 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
+ *fill*         0x0000000000008201        0xf 
+ .bss           0x0000000000008210       0xa0 /tmp/sdl_dwarves-ddf038.o
+                0x0000000000008210                ControllerHandles
+                0x0000000000008230                JoystickHandles
+                0x0000000000008250                RumbleHandles
  *(COMMON)
-                0x00000000000082a0                . = ALIGN ((. != 0x0)?0x8:0x1)
+                0x00000000000082b0                . = ALIGN ((. != 0x0)?0x8:0x1)
 
 .lbss
  *(.dynlbss)
  *(.lbss .lbss.* .gnu.linkonce.lb.*)
  *(LARGE_COMMON)
-                0x00000000000082a0                . = ALIGN (0x8)
-                0x00000000000082a0                . = SEGMENT_START ("ldata-segment", .)
+                0x00000000000082b0                . = ALIGN (0x8)
+                0x00000000000082b0                . = SEGMENT_START ("ldata-segment", .)
 
 .lrodata
  *(.lrodata .lrodata.* .gnu.linkonce.lr.*)
 
-.ldata          0x000000000000a2a0        0x0
+.ldata          0x000000000000a2b0        0x0
  *(.ldata .ldata.* .gnu.linkonce.l.*)
-                0x000000000000a2a0                . = ALIGN ((. != 0x0)?0x8:0x1)
-                0x000000000000a2a0                . = ALIGN (0x8)
-                0x00000000000082a0                _end = .
+                0x000000000000a2b0                . = ALIGN ((. != 0x0)?0x8:0x1)
+                0x000000000000a2b0                . = ALIGN (0x8)
+                0x00000000000082b0                _end = .
                 [!provide]                        PROVIDE (end = .)
-                0x000000000000a2a0                . = DATA_SEGMENT_END (.)
+                0x000000000000a2b0                . = DATA_SEGMENT_END (.)
 
 .stab
  *(.stab)
@@ -500,7 +503,7 @@ LOAD /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crtn.o
  .comment       0x0000000000000000       0x11 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/Scrt1.o
                                          0x12 (size before relaxing)
  .comment       0x0000000000000011       0x12 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/crtbeginS.o
- .comment       0x0000000000000011       0x2d /tmp/sdl_dwarves-aee42c.o
+ .comment       0x0000000000000011       0x2d /tmp/sdl_dwarves-ddf038.o
                                          0x2e (size before relaxing)
  .comment       0x000000000000003e       0x12 /usr/lib/libc_nonshared.a(elf-init.oS)
  .comment       0x000000000000003e       0x12 /usr/lib/libc_nonshared.a(stat.oS)
@@ -527,34 +530,34 @@ LOAD /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/9.1.0/../../../../lib64/crtn.o
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x0000000000000000     0x53a5
+.debug_info     0x0000000000000000     0x5401
  *(.debug_info .gnu.linkonce.wi.*)
- .debug_info    0x0000000000000000     0x53a5 /tmp/sdl_dwarves-aee42c.o
+ .debug_info    0x0000000000000000     0x5401 /tmp/sdl_dwarves-ddf038.o
 
 .debug_abbrev   0x0000000000000000      0x317
  *(.debug_abbrev)
- .debug_abbrev  0x0000000000000000      0x317 /tmp/sdl_dwarves-aee42c.o
+ .debug_abbrev  0x0000000000000000      0x317 /tmp/sdl_dwarves-ddf038.o
 
-.debug_line     0x0000000000000000     0x1b3c
+.debug_line     0x0000000000000000     0x1b7d
  *(.debug_line .debug_line.* .debug_line_end)
- .debug_line    0x0000000000000000     0x1b3c /tmp/sdl_dwarves-aee42c.o
+ .debug_line    0x0000000000000000     0x1b7d /tmp/sdl_dwarves-ddf038.o
 
 .debug_frame
  *(.debug_frame)
 
-.debug_str      0x0000000000000000     0x4384
+.debug_str      0x0000000000000000     0x43bc
  *(.debug_str)
- .debug_str     0x0000000000000000     0x4384 /tmp/sdl_dwarves-aee42c.o
-                                       0x4776 (size before relaxing)
+ .debug_str     0x0000000000000000     0x43bc /tmp/sdl_dwarves-ddf038.o
+                                       0x47c5 (size before relaxing)
 
-.debug_loc      0x0000000000000000       0x39
+.debug_loc      0x0000000000000000       0x25
  *(.debug_loc)
- .debug_loc     0x0000000000000000       0x39 /tmp/sdl_dwarves-aee42c.o
+ .debug_loc     0x0000000000000000       0x25 /tmp/sdl_dwarves-ddf038.o
 
 .debug_macinfo  0x0000000000000000        0x1
  *(.debug_macinfo)
  .debug_macinfo
-                0x0000000000000000        0x1 /tmp/sdl_dwarves-aee42c.o
+                0x0000000000000000        0x1 /tmp/sdl_dwarves-ddf038.o
 
 .debug_weaknames
  *(.debug_weaknames)
