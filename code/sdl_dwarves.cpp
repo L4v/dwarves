@@ -62,8 +62,8 @@ LoadShader(const char* path)
   return shaderText;
 }
 
-debug_read_file_result
-DEBUGPlatformReadEntireFile(char* Filename)
+
+DEBUG_PLATFORM_READ_ENTIRE_FILE(DEBUGPlatformReadEntireFile)
 {
   debug_read_file_result Result = {};
   // NOTE(l4v): Use O_CREATE flag to create a non existant
@@ -117,8 +117,8 @@ DEBUGPlatformReadEntireFile(char* Filename)
   close(FileHandle);
   return Result;
 }
-void
-DEBUGPlatformFreeFileMemory(void* Memory)
+
+DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUGPlatformFreeFileMemory)
 {
   if(Memory)
     {
@@ -126,10 +126,7 @@ DEBUGPlatformFreeFileMemory(void* Memory)
     }
 }
 
-bool32
-DEBUGPlatformWriteEntireFile(char* Filename,
-			     uint32 MemorySize,
-			     void* Memory)
+DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUGPlatformWriteEntireFile)
 {
   int32 FileHandle = open(Filename, O_WRONLY | O_CREAT, S_IRUSR |
 			  S_IWUSR | S_IRGRP | S_IROTH);
@@ -296,7 +293,7 @@ SDLLoadGameCode()
 {
   sdl_game_code Result = {};
   
-  Result.GameCodeDyLib = dlopen("dwarves.dylib", RTLD_NOW);
+  Result.GameCodeDyLib = dlopen("dwarves.so", RTLD_LAZY | RTLD_GLOBAL);
   if(Result.GameCodeDyLib)
     {
       Result.UpdateAndRender = (game_update_and_render *)
@@ -304,10 +301,15 @@ SDLLoadGameCode()
       Result.GetSoundSamples = (game_get_sound_samples *)
 	dlsym(Result.GameCodeDyLib, "GameGetSoundSamples");
 
-      IsValid = (Result.UpdateAndRender && Result.GetSoundSamples);
+      if(!Result.UpdateAndRender)
+	printf("UPDATE INVALID\n");
+      if(!Result.GetSoundSamples)
+	printf("S INVALID\n");
+      
+      Result.IsValid = (Result.UpdateAndRender && Result.GetSoundSamples);
     }
 
-  if(!IsValid)
+  if(!Result.IsValid)
     {
       printf("Game code was not loaded properly\n");
       Result.UpdateAndRender = GameUpdateAndRenderStub;
@@ -826,6 +828,11 @@ int main(void)
 				     0);
   GameMemory.TransientStorage = ((uint8*)GameMemory.PermanentStorage
 				 + GameMemory.PermanentStorageSize);
+
+  
+  GameMemory.DEBUGPlatformReadEntireFile = DEBUGPlatformReadEntireFile;
+  GameMemory.DEBUGPlatformFreeFileMemory = DEBUGPlatformFreeFileMemory;
+  GameMemory.DEBUGPlatformWriteEntireFile = DEBUGPlatformWriteEntireFile;
 
   // NOTE(l4v): Checks whether the memory was allocated
   // mmap returns -1 if allocation failed

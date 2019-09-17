@@ -50,7 +50,7 @@ RenderWeirdGradient(game_offscreen_buffer* Buffer, int32 BlueOffset,
     }
 }
 
-GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
+extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
   // NOTE(l4v): Pointer arithmetic to check whether the array is of
   // the correct size
@@ -68,11 +68,11 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
       char Filename[32] = "../code/";
       strcat(Filename, __FILE__);
 
-      debug_read_file_result BitmapMemory = DEBUGPlatformReadEntireFile(Filename);
+      debug_read_file_result BitmapMemory = Memory->DEBUGPlatformReadEntireFile(Filename);
       if(BitmapMemory.Contents)
 	{
-	  DEBUGPlatformWriteEntireFile("../data/test.out", BitmapMemory.ContentsSize, BitmapMemory.Contents);
-	  DEBUGPlatformFreeFileMemory(BitmapMemory.Contents);
+	  Memory->DEBUGPlatformWriteEntireFile("../data/test.out", BitmapMemory.ContentsSize, BitmapMemory.Contents);
+	  Memory->DEBUGPlatformFreeFileMemory(BitmapMemory.Contents);
 	}
       printf("TEST");
 #endif
