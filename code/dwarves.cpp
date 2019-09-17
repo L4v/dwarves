@@ -43,7 +43,7 @@ RenderWeirdGradient(game_offscreen_buffer* Buffer, int32 BlueOffset,
 	  uint8 Green = (Y + GreenOffset);
 
 	  // NOTE(l4v): The pixels are written as: RR GG BB AA
-	  *Pixel++ = ((Green << 8) | (Blue << 16));
+	  *Pixel++ = ((Green << 16) | (Blue << 16));
 	}
       Row += Buffer->Pitch;
     }
@@ -114,7 +114,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	  }
       }
   }
-
+  
   // NOTE(l4v): So as not to cause a crash
   if(GameState->ToneHz == 0)
     {

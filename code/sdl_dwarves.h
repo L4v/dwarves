@@ -40,5 +40,15 @@ struct sdl_debug_time_marker
   int32 FlipWriteCursor;
 };
 
+struct sdl_game_code
+{
+  void* GameCodeDynLib;
+  time_t DynLibLastWriteTime;
+  game_update_and_render* UpdateAndRender;
+  game_get_sound_samples* GetSoundSamples;
+
+  bool32 IsValid;
+};
+
 #define SDL_DWARVES_H
 #endif

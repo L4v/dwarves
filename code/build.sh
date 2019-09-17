@@ -9,7 +9,7 @@ CommonLinkerFlags=(-lGL -lGLEW `sdl2-config --cflags --libs` -ldl)
 
 clang++ ${CommonCompilerFlags[*]} -shared -o dwarves.so -fpic ../code/dwarves.cpp #-Wl,-Map,output.map,--gc-sections
 
-clang++ ${CommonCompilerFlags[*]} ../code/sdl_dwarves.cpp ${CommonLinkerFlags[*]} -Wl,-Map,linux32_output.map,--gc-sections -o dwarves
+clang++ ${CommonCompilerFlags[*]} ../code/sdl_dwarves.cpp ${CommonLinkerFlags[*]}  -o dwarves #-Wl,-Map,linux32_output.map,--gc-sections
 
 popd
 
