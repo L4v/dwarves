@@ -301,6 +301,9 @@ SDLLoadGameCode()
       Result.GetSoundSamples = (game_get_sound_samples *)
 	dlsym(Result.GameCodeDyLib, "GameGetSoundSamples");
 
+      char* Err = dlerror();
+      printf("%s\n", Err);
+      
       if(!Result.UpdateAndRender)
 	printf("UPDATE INVALID\n");
       if(!Result.GetSoundSamples)

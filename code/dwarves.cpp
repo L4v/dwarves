@@ -124,7 +124,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		      GameState->GreenOffset);
 }
 
-GAME_GET_SOUND_SAMPLES(GameGetSoundSamples)
+extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples)
 {
   game_state* GameState = (game_state*)Memory->PermanentStorage;
   GameOutputSound(SoundBuffer, GameState->ToneHz);

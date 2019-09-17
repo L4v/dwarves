@@ -194,8 +194,6 @@ GAME_UPDATE_AND_RENDER(GameUpdateAndRenderStub)
 // function, cannot take more than a millisecond or so
 // TODO(l4v): Reduce the pressure on the function's performance
 // by measuring it?
-void GameGetSoundSamples(game_memory* Memory,
-				  game_sound_output_buffer* SoundBuffer);
 #define GAME_GET_SOUND_SAMPLES(name) void name(game_memory* Memory, game_sound_output_buffer* SoundBuffer)
 typedef GAME_GET_SOUND_SAMPLES(game_get_sound_samples);
 GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesStub)
