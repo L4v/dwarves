@@ -183,6 +183,7 @@ SDLFillSoundBuffer(sdl_sound_output* SoundOutput, int32 ByteToLock,
       *DestSample++ = *SourceSample++;
       ++SoundOutput->RunningSampleIndex;
     }
+  
   // TODO(l4v): Collapse the for loops
       
   int32 Region2SampleCount = Region2Size / SoundOutput->BytesPerSample;
@@ -298,8 +299,6 @@ SDLLoadGameCode(char* SourceDynLibName)
   char *TempDynLibName = "dwarves_temp.so";
   sdl_game_code Result = {};
   
-  Result.DynLibLastWriteTime = SDLGetLastWriteTime(SourceDynLibName);
-  
   char CopyString[64];
   memset(CopyString, 0, sizeof(CopyString));
   strcpy(CopyString, "cp ");
@@ -308,7 +307,8 @@ SDLLoadGameCode(char* SourceDynLibName)
   strcat(CopyString, TempDynLibName);
   system(CopyString);
   
-  Result.GameCodeDynLib = dlopen(TempDynLibName, RTLD_LAZY | RTLD_GLOBAL);
+  Result.GameCodeDynLib = dlopen(TempDynLibName, RTLD_LAZY);
+  Result.DynLibLastWriteTime = SDLGetLastWriteTime(SourceDynLibName);
   if(Result.GameCodeDynLib)
     {
       Result.UpdateAndRender = (game_update_and_render *)
@@ -897,7 +897,7 @@ int main(void)
 	{
 	  time_t NewDynLibWriteTime =
 	    SDLGetLastWriteTime(SourceDynLibName);
-	  if(Loaded++ > 120)//NewDynLibWriteTime > Game.DynLibLastWriteTime)
+	  if(Loaded++ > 4)
 	    {
 	      printf("Difference: %ld\n", NewDynLibWriteTime - Game.DynLibLastWriteTime);
 	      printf("Code changed!\n");
