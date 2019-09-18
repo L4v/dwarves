@@ -362,7 +362,7 @@ SDLLoadGameCode(char* SourceDynLibName)
   // system(CopyString);
   //SDLCopyFile(SourceDynLibName, TempDynLibName);
   
-  Result.GameCodeDynLib = dlopen(SourceDynLibName, RTLD_LAZY);
+  Result.GameCodeDynLib = dlopen(SourceDynLibName, RTLD_NOW | RTLD_GLOBAL);
   Result.DynLibLastWriteTime = SDLGetLastWriteTime(SourceDynLibName);
   if(Result.GameCodeDynLib)
     {
@@ -946,19 +946,21 @@ int main(void)
       char *SourceDynLibName = "dwarves.so";
       sdl_game_code Game = SDLLoadGameCode(SourceDynLibName);
       uint32 Loaded = 0;
-      
+      bool32 Changed = false;
       // NOTE(l4v): Main loop
       while(Running)
 	{
 	  time_t NewDynLibWriteTime =
 	    SDLGetLastWriteTime(SourceDynLibName);
-	  if(NewDynLibWriteTime != Game.DynLibLastWriteTime)
+	  if((NewDynLibWriteTime != Game.DynLibLastWriteTime))// && Loaded++ > 60)
 	    {
 	      printf("Difference: %ld\n", NewDynLibWriteTime - Game.DynLibLastWriteTime);
 	      printf("Code changed!\n");
 	      SDLUnloadGameCode(&Game);
+	      SDL_Delay(50);
 	      Game = SDLLoadGameCode(SourceDynLibName);
 	      Loaded = 0;
+	      Changed = true;
 	    }
 	  
 	  // TODO(l4v): Zeroing macro
