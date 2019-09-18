@@ -952,7 +952,7 @@ int main(void)
 	{
 	  time_t NewDynLibWriteTime =
 	    SDLGetLastWriteTime(SourceDynLibName);
-	  if((NewDynLibWriteTime != Game.DynLibLastWriteTime))// && Loaded++ > 60)
+	  if((NewDynLibWriteTime != Game.DynLibLastWriteTime))
 	    {
 	      printf("Difference: %ld\n", NewDynLibWriteTime - Game.DynLibLastWriteTime);
 	      printf("Code changed!\n");
