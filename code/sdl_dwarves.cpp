@@ -27,6 +27,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <time.h>
+#include <errno.h>
 
 #include "sdl_dwarves.h"
 
@@ -281,6 +282,59 @@ SDLOpenGameControllers()
     }  
 }
 
+internal int32
+SDLCopyFile(const char* Source, const char* Destination)
+{
+  int FDSource, FDDestination;
+  char Buffer[4096];
+  ssize_t BytesRead;
+  int ErrorNo;
+
+  FDSource = open(Source, O_RDONLY);
+  if(FDSource == -1)
+    {
+      printf("Unable to open file for copying\n");
+      return -1;
+    }
+
+  FDDestination = open(Destination, O_WRONLY | O_CREAT | O_TRUNC, 0755);
+  if(FDDestination == -1)
+    {
+      printf("Unable to open file for writing\n");
+      close(FDSource);
+      return -1;
+    }
+
+  while(BytesRead = read(FDSource, Buffer, sizeof(Buffer)),
+			 BytesRead > 0)
+    {
+      char* Out = Buffer;
+      ssize_t BytesWritten;
+      do
+	{
+	  BytesWritten = write(FDDestination, Out, BytesRead);
+	  if(BytesWritten >= 0)
+	    {
+	      BytesRead -= BytesWritten;
+	      Out += BytesWritten;
+	    }
+	  else if(errno != EINTR)
+	    {
+	      printf("Writing error occurred\n");
+	      close(FDSource);
+	      close(FDDestination);
+	      return -1;
+	    }
+	}while(BytesRead > 0);
+    }
+
+  close(FDDestination);
+  close(FDSource);
+
+  return 0;
+  
+}
+
 internal inline time_t
 SDLGetLastWriteTime(char* Filename)
 {
@@ -299,15 +353,16 @@ SDLLoadGameCode(char* SourceDynLibName)
   char *TempDynLibName = "dwarves_temp.so";
   sdl_game_code Result = {};
   
-  char CopyString[64];
-  memset(CopyString, 0, sizeof(CopyString));
-  strcpy(CopyString, "cp ");
-  strcat(CopyString, SourceDynLibName);
-  strcat(CopyString, " ");
-  strcat(CopyString, TempDynLibName);
-  system(CopyString);
+  // char CopyString[64];
+  // memset(CopyString, 0, sizeof(CopyString));
+  // strcpy(CopyString, "cp ");
+  // strcat(CopyString, SourceDynLibName);
+  // strcat(CopyString, " ");
+  // strcat(CopyString, TempDynLibName);
+  // system(CopyString);
+  //SDLCopyFile(SourceDynLibName, TempDynLibName);
   
-  Result.GameCodeDynLib = dlopen(TempDynLibName, RTLD_LAZY);
+  Result.GameCodeDynLib = dlopen(SourceDynLibName, RTLD_LAZY);
   Result.DynLibLastWriteTime = SDLGetLastWriteTime(SourceDynLibName);
   if(Result.GameCodeDynLib)
     {
@@ -897,7 +952,7 @@ int main(void)
 	{
 	  time_t NewDynLibWriteTime =
 	    SDLGetLastWriteTime(SourceDynLibName);
-	  if(Loaded++ > 4)
+	  if(NewDynLibWriteTime != Game.DynLibLastWriteTime)
 	    {
 	      printf("Difference: %ld\n", NewDynLibWriteTime - Game.DynLibLastWriteTime);
 	      printf("Code changed!\n");
