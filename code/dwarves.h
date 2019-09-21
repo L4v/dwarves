@@ -211,6 +211,10 @@ struct game_state
   int32 GreenOffset;
   
   real32 tSine;
+
+  int32 PlayerX;
+  int32 PlayerY;
+  real32 tJump;
 };
 
 #define DWARVES_H

@@ -263,13 +263,15 @@ SDLOpenGameControllers()
   
   int32 MaxJoysticks = SDL_NumJoysticks();
   int32 ControllerIndex = 0;
+  int32 Joystick = 0;
 
   for(int JoystickIndex = 0; JoystickIndex < MaxJoysticks; ++JoystickIndex)
     {
       if(!SDL_IsGameController(JoystickIndex))
 	{
-	  JoystickHandles[JoystickIndex] = SDL_JoystickOpen(JoystickIndex);
+	  JoystickHandles[Joystick++] = SDL_JoystickOpen(JoystickIndex);
 	  printf("Is joystick!\n");
+	  continue;
 	}
       if(ControllerIndex >= MAX_CONTROLLERS)
 	{
@@ -957,7 +959,7 @@ int main(void)
 	      printf("Difference: %ld\n", NewDynLibWriteTime - Game.DynLibLastWriteTime);
 	      printf("Code changed!\n");
 	      SDLUnloadGameCode(&Game);
-	      SDL_Delay(50);
+	      SDL_Delay(100);
 	      Game = SDLLoadGameCode(SourceDynLibName);
 	      Loaded = 0;
 	      Changed = true;
@@ -1006,9 +1008,9 @@ int main(void)
 	      ++ControllerIndex)
 	    {
 	      game_controller_input *OldController =
-		GetController(OldInput, ControllerIndex);
+		GetController(OldInput, ControllerIndex+1);
 	      game_controller_input *NewController =
-		GetController(NewInput, ControllerIndex);
+		GetController(NewInput, ControllerIndex+1);
 	      if(ControllerHandles[ControllerIndex] != 0
 		 && SDL_GameControllerGetAttached(ControllerHandles[ControllerIndex]))
 		{
@@ -1184,7 +1186,7 @@ int main(void)
 	      Buffer.Height = GlobalBackbuffer.Height;
 	      Buffer.Pitch = GlobalBackbuffer.Pitch;
 	      Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
-	      Game.UpdateAndRender(&GameMemory, Input, &Buffer);
+	      Game.UpdateAndRender(&GameMemory, &Input[0], &Buffer);
 
 	      uint64 AudioWallClock = SDLGetWallClock();
 	      real32 FromBeginToAudioSeconds = SDLGetSecondsElapsed(FlipWallClock, AudioWallClock);
