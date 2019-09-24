@@ -50,5 +50,11 @@ struct sdl_game_code
   bool32 IsValid;
 };
 
+struct sdl_state
+{
+  int32 InputRecordingIndex;
+  int32 InputPlayingIndex;
+};
+
 #define SDL_DWARVES_H
 #endif

@@ -549,7 +549,8 @@ SDLDebugSyncDisplay(uint32 LastMarkerIndex, sdl_debug_time_marker* Marker,
 }
 
 internal bool32
-SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
+SDLHandleEvent(sdl_state* SDLState,
+	       SDL_Event* Event, game_controller_input* NewKeyboardController)
 {
   bool32 ShouldQuit = false;
 
@@ -666,6 +667,18 @@ SDLHandleEvent(SDL_Event* Event, game_controller_input* NewKeyboardController)
 		if(IsDown)
 		  {
 		    GlobalPause = !GlobalPause;
+		  }
+	      }
+	    else if(KeyCode == SDLK_l)
+	      {
+		if(SDLState->InputRecordingIndex == 0)
+		  {
+		    SDLState->InputRecordingIndex = 1;
+		  }
+		else
+		  {
+		    SDLState->InputRecordingIndex = 0;
+		    SDLState->InputPlayingIndex = 1;
 		  }
 	      }
 #endif
@@ -933,14 +946,15 @@ int main(void)
       *NewInput = {};
       *OldInput = {};
     
-      bool32 Running = true;
       uint32 DebugLastMarkerIndex = 0;
       int32 DebugLastPlayCursor[GameUpdateHz / 2] = {};
       sdl_debug_time_marker DebugMarker[GameUpdateHz / 2] = {};
+
+      sdl_state SDLState = {};
       
       int32 AudioLatencyBytes;
       real32 AudioLatencySeconds;
-
+      
       // TODO(l4v): Make better pause
       GlobalPause = false;
 
@@ -950,6 +964,7 @@ int main(void)
       uint32 Loaded = 0;
       bool32 Changed = false;
       // NOTE(l4v): Main loop
+      bool32 Running = true;
       while(Running)
 	{
 	  time_t NewDynLibWriteTime =
@@ -1186,7 +1201,17 @@ int main(void)
 	      Buffer.Height = GlobalBackbuffer.Height;
 	      Buffer.Pitch = GlobalBackbuffer.Pitch;
 	      Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
-	      Game.UpdateAndRender(&GameMemory, &Input[0], &Buffer);
+
+	      if(SDLState->InputRecordingIndex)
+		{
+		  SDLRecordInput(&SDLState, &NewInput);
+		}
+	      if(SDLState->InputPlayingIndex)
+		{
+		  SDLPlaybackInput(&SDLState, &NewInput);
+		}
+	      
+	      Game.UpdateAndRender(&GameMemory, NewInput, &Buffer);
 
 	      uint64 AudioWallClock = SDLGetWallClock();
 	      real32 FromBeginToAudioSeconds = SDLGetSecondsElapsed(FlipWallClock, AudioWallClock);
