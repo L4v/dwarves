@@ -355,15 +355,6 @@ SDLLoadGameCode(char* SourceDynLibName)
   char *TempDynLibName = "dwarves_temp.so";
   sdl_game_code Result = {};
   
-  // char CopyString[64];
-  // memset(CopyString, 0, sizeof(CopyString));
-  // strcpy(CopyString, "cp ");
-  // strcat(CopyString, SourceDynLibName);
-  // strcat(CopyString, " ");
-  // strcat(CopyString, TempDynLibName);
-  // system(CopyString);
-  //SDLCopyFile(SourceDynLibName, TempDynLibName);
-  
   Result.GameCodeDynLib = dlopen(SourceDynLibName, RTLD_NOW | RTLD_GLOBAL);
   Result.DynLibLastWriteTime = SDLGetLastWriteTime(SourceDynLibName);
   if(Result.GameCodeDynLib)
@@ -551,27 +542,8 @@ SDLDebugSyncDisplay(uint32 LastMarkerIndex, sdl_debug_time_marker* Marker,
 internal void
 SDLRecordInput(sdl_state* SDLState, game_input* NewInput)
 {
-  ssize_t BytesToWrite = sizeof(*NewInput);
-  uint8* NextByteLocation = (uint8*)NewInput;
-
-  while(BytesToWrite > 0)
-    {
-      ssize_t BytesWritten = write(SDLState->RecordingHandle,
-				   NextByteLocation,
-				   BytesToWrite);
-      printf("To write: %ldB, writing: %ldB, Handle %d\n",
-	     BytesToWrite, BytesWritten, SDLState->RecordingHandle);
-      if(BytesWritten == -1)
-	{
-	  printf("SDLRecordInput failed to write bytes!\n");
-	  close(SDLState->RecordingHandle);
-	  return;
-	}
-      BytesToWrite -= BytesWritten;
-      printf("Difference: %ld\n", BytesToWrite);
-      NextByteLocation += BytesWritten;
-    }
-  printf("Got out\n");
+  printf("%ld\n", sizeof(NewInput));
+  write(SDLState->RecordingHandle, NewInput, sizeof(NewInput));
 }
 
 internal void
@@ -618,6 +590,7 @@ SDLPlaybackInput(sdl_state* SDLState, game_input* NewInput)
   if(read(SDLState->PlaybackHandle, NewInput, sizeof(NewInput)))
     {
       // NOTE(l4v): There's still input
+      printf("MoveUp: %d\n", NewInput->Controllers[0].MoveUp.EndedDown);
     }
   else
     {
@@ -1291,6 +1264,7 @@ int main(void)
 		}
 	      if(SDLState.InputPlayingIndex)
 		{
+		  printf("Replaying!\n");
 		  SDLPlaybackInput(&SDLState, NewInput);
 		}
 	      
