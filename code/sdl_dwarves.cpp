@@ -548,6 +548,86 @@ SDLDebugSyncDisplay(uint32 LastMarkerIndex, sdl_debug_time_marker* Marker,
 	    
 }
 
+internal void
+SDLRecordInput(sdl_state* SDLState, game_input* NewInput)
+{
+  ssize_t BytesToWrite = sizeof(*NewInput);
+  uint8* NextByteLocation = (uint8*)NewInput;
+
+  while(BytesToWrite > 0)
+    {
+      ssize_t BytesWritten = write(SDLState->RecordingHandle,
+				   NextByteLocation,
+				   BytesToWrite);
+      printf("To write: %ldB, writing: %ldB, Handle %d\n",
+	     BytesToWrite, BytesWritten, SDLState->RecordingHandle);
+      if(BytesWritten == -1)
+	{
+	  printf("SDLRecordInput failed to write bytes!\n");
+	  close(SDLState->RecordingHandle);
+	  return;
+	}
+      BytesToWrite -= BytesWritten;
+      printf("Difference: %ld\n", BytesToWrite);
+      NextByteLocation += BytesWritten;
+    }
+  printf("Got out\n");
+}
+
+internal void
+SDLBeginRecordingInput(sdl_state* SDLState, int32 InputRecordingIndex)
+{
+  // TODO(l4v): Temp filename
+  char* Filename = "foo.dwi";
+  SDLState->InputRecordingIndex = InputRecordingIndex;
+  SDLState->RecordingHandle = open(Filename, O_WRONLY | O_CREAT,
+				   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if(SDLState->RecordingHandle == -1)
+    {
+      printf("SDLBeginRecordingInput failed to open recording file!\n");
+    }
+}
+
+internal void
+SDLEndRecordingInput(sdl_state* SDLState)
+{
+  close(SDLState->RecordingHandle);
+  SDLState->InputRecordingIndex = 0;
+}
+
+internal void
+SDLBeginInputPlayback(sdl_state* SDLState, int32 InputPlaybackIndex)
+{
+  // TODO(l4v): Temp filename
+  char* Filename = "foo.dwi";
+  SDLState->InputPlayingIndex = InputPlaybackIndex;
+  SDLState->PlaybackHandle = open(Filename, O_RDONLY | O_CREAT,
+				   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+}
+
+internal void
+SDLEndInputPlayback(sdl_state* SDLState)
+{
+  close(SDLState->PlaybackHandle);
+  SDLState->InputPlayingIndex = 0;
+}
+
+internal void
+SDLPlaybackInput(sdl_state* SDLState, game_input* NewInput)
+{
+  if(read(SDLState->PlaybackHandle, NewInput, sizeof(NewInput)))
+    {
+      // NOTE(l4v): There's still input
+    }
+  else
+    {
+      // NOTE(l4v): Hit the end of the stream, go back to beginning
+      int32 PlayingIndex = SDLState->InputPlayingIndex;
+      SDLEndInputPlayback(SDLState);
+      SDLBeginInputPlayback(SDLState, PlayingIndex);
+    }
+}
+
 internal bool32
 SDLHandleEvent(sdl_state* SDLState,
 	       SDL_Event* Event, game_controller_input* NewKeyboardController)
@@ -671,14 +751,17 @@ SDLHandleEvent(sdl_state* SDLState,
 	      }
 	    else if(KeyCode == SDLK_l)
 	      {
-		if(SDLState->InputRecordingIndex == 0)
+		if(IsDown)
 		  {
-		    SDLState->InputRecordingIndex = 1;
-		  }
-		else
-		  {
-		    SDLState->InputRecordingIndex = 0;
-		    SDLState->InputPlayingIndex = 1;
+		    if(SDLState->InputRecordingIndex == 0)
+		      {
+			SDLBeginRecordingInput(SDLState, 1);
+		      }
+		    else
+		      {
+			SDLEndRecordingInput(SDLState);
+			SDLBeginInputPlayback(SDLState, 1);
+		      }
 		  }
 	      }
 #endif
@@ -1007,7 +1090,7 @@ int main(void)
 	  SDL_Event Event;
 	  while(SDL_PollEvent(&Event))
 	    {
-	      if(SDLHandleEvent(&Event, NewKeyboardController))
+	      if(SDLHandleEvent(&SDLState, &Event, NewKeyboardController))
 		Running = false;
 	    }
 
@@ -1202,13 +1285,13 @@ int main(void)
 	      Buffer.Pitch = GlobalBackbuffer.Pitch;
 	      Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
 
-	      if(SDLState->InputRecordingIndex)
+	      if(SDLState.InputRecordingIndex)
 		{
-		  SDLRecordInput(&SDLState, &NewInput);
+		  SDLRecordInput(&SDLState, NewInput);
 		}
-	      if(SDLState->InputPlayingIndex)
+	      if(SDLState.InputPlayingIndex)
 		{
-		  SDLPlaybackInput(&SDLState, &NewInput);
+		  SDLPlaybackInput(&SDLState, NewInput);
 		}
 	      
 	      Game.UpdateAndRender(&GameMemory, NewInput, &Buffer);

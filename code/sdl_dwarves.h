@@ -52,7 +52,10 @@ struct sdl_game_code
 
 struct sdl_state
 {
+  int32 RecordingHandle;
   int32 InputRecordingIndex;
+
+  int32 PlaybackHandle;
   int32 InputPlayingIndex;
 };
 
