@@ -2,3 +2,4 @@ CMakeCache.txt
 CMakeFiles/dwarves.dir/*.cpp.o
 misc/elpa/*
 misc/*.data
+build/*
