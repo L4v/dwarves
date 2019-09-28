@@ -8,3 +8,9 @@ or:
 ```sh
 source editor.sh
 ```
+
+# Features
+
+- One time allocation of a single block of memory at startup
+- Live code reload
+- Code looping in debug compilation mode

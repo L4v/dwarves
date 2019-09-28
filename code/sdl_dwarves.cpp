@@ -543,7 +543,7 @@ internal void
 SDLRecordInput(sdl_state* SDLState, game_input* NewInput)
 {
   printf("%ld\n", sizeof(NewInput));
-  write(SDLState->RecordingHandle, NewInput, sizeof(NewInput));
+  write(SDLState->RecordingHandle, NewInput, sizeof(*NewInput));
 }
 
 internal void
@@ -554,6 +554,13 @@ SDLBeginRecordingInput(sdl_state* SDLState, int32 InputRecordingIndex)
   SDLState->InputRecordingIndex = InputRecordingIndex;
   SDLState->RecordingHandle = open(Filename, O_WRONLY | O_CREAT,
 				   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+  uint32 BytesToWrite = (uint32)SDLState->TotalSize;
+  Assert(SDLState->TotalSize == BytesToWrite);
+  
+  write(SDLState->RecordingHandle, SDLState->GameMemoryBlock,
+        BytesToWrite);
+  
   if(SDLState->RecordingHandle == -1)
     {
       printf("SDLBeginRecordingInput failed to open recording file!\n");
@@ -575,6 +582,12 @@ SDLBeginInputPlayback(sdl_state* SDLState, int32 InputPlaybackIndex)
   SDLState->InputPlayingIndex = InputPlaybackIndex;
   SDLState->PlaybackHandle = open(Filename, O_RDONLY | O_CREAT,
 				   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  
+  uint32 BytesToRead = (uint32)SDLState->TotalSize;
+  Assert(SDLState->TotalSize == BytesToRead);
+  
+  read(SDLState->PlaybackHandle, SDLState->GameMemoryBlock,
+        BytesToRead);
 }
 
 internal void
@@ -587,18 +600,17 @@ SDLEndInputPlayback(sdl_state* SDLState)
 internal void
 SDLPlaybackInput(sdl_state* SDLState, game_input* NewInput)
 {
-  if(read(SDLState->PlaybackHandle, NewInput, sizeof(NewInput)))
-    {
-      // NOTE(l4v): There's still input
-      printf("MoveUp: %d\n", NewInput->Controllers[0].MoveUp.EndedDown);
-    }
-  else
-    {
-      // NOTE(l4v): Hit the end of the stream, go back to beginning
-      int32 PlayingIndex = SDLState->InputPlayingIndex;
-      SDLEndInputPlayback(SDLState);
-      SDLBeginInputPlayback(SDLState, PlayingIndex);
-    }
+  ssize_t BytesRead =
+    read(SDLState->PlaybackHandle, NewInput, sizeof(*NewInput));
+    if(BytesRead != -1)
+      {
+	if(BytesRead == 0)
+	  {
+	    int32 PlayingIndex = SDLState->InputPlayingIndex;
+	    SDLEndInputPlayback(SDLState);
+	    SDLBeginInputPlayback(SDLState, PlayingIndex);
+	  }
+      }
 }
 
 internal bool32
@@ -957,6 +969,7 @@ int main(void)
 				 0);
   GlobalBackbuffer.Pitch = GlobalBackbuffer.Width * GlobalBackbuffer.BytesPerPixel;
   
+  sdl_state SDLState = {};
   game_memory GameMemory = {};
   
 #if INTERNAL
@@ -966,16 +979,17 @@ int main(void)
 #endif
   
   GameMemory.PermanentStorageSize = Mebibytes(64);
-  GameMemory.TransientStorageSize = Gibibytes(4);
-  uint64 TotalStorageSize = GameMemory.PermanentStorageSize
+  GameMemory.TransientStorageSize = Mebibytes(64);
+  SDLState.TotalSize = GameMemory.PermanentStorageSize
     + GameMemory.TransientStorageSize;
   
-  GameMemory.PermanentStorage = mmap(BaseAddress,
-				     TotalStorageSize,
-				     PROT_READ | PROT_WRITE,
-				     MAP_ANON | MAP_PRIVATE,
-				     -1,
-				     0);
+  SDLState.GameMemoryBlock = mmap(BaseAddress,
+				  SDLState.TotalSize,
+				  PROT_READ | PROT_WRITE,
+				  MAP_ANON | MAP_PRIVATE,
+				  -1,
+				  0);
+  GameMemory.PermanentStorage = SDLState.GameMemoryBlock;
   GameMemory.TransientStorage = ((uint8*)GameMemory.PermanentStorage
 				 + GameMemory.PermanentStorageSize);
 
@@ -1005,8 +1019,6 @@ int main(void)
       uint32 DebugLastMarkerIndex = 0;
       int32 DebugLastPlayCursor[GameUpdateHz / 2] = {};
       sdl_debug_time_marker DebugMarker[GameUpdateHz / 2] = {};
-
-      sdl_state SDLState = {};
       
       int32 AudioLatencyBytes;
       real32 AudioLatencySeconds;

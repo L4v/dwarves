@@ -52,6 +52,9 @@ struct sdl_game_code
 
 struct sdl_state
 {
+  uint64 TotalSize;
+  void* GameMemoryBlock;
+  
   int32 RecordingHandle;
   int32 InputRecordingIndex;
 
