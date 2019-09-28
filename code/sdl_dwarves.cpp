@@ -249,7 +249,9 @@ SDLProcessGameControllerAxisValue(int16 Value, int16 DeadZoneThreshold)
 internal void
 SDLWindowResize(sdl_offscreen_buffer* Buffer, int32 Width, int32 Height)
 {
-  glViewport(0, 0, Width, Height);
+  // IMPORTANT(l4v): For now, the size of the drawn image
+  // is constant
+  glViewport(0, 0, Buffer->Width, Buffer->Height);
 }
 
 internal void
@@ -1101,6 +1103,7 @@ int main(void)
 		  // ---------------------------
 		  
 		  NewController->IsConnected = true;
+		  NewController->IsAnalog = OldController->IsAnalog;
 		  
 		  // NOTE(l4v): Set controllers to be analog
         
@@ -1293,7 +1296,7 @@ int main(void)
 	      real32 SecondsLeftUntilFlip = TargetSecondsPerFrame - FromBeginToAudioSeconds;
 	      int32 ExpectedBytesUntilFlip = (int32)((SecondsLeftUntilFlip / TargetSecondsPerFrame) *
 						     (real32)ExpectedSoundBytesPerFrame);
-	      int32 ExpectedFrameBoundaryByte = GlobalAudioRingBuffer.PlayCursor + ExpectedSoundBytesPerFrame;
+	      int32 ExpectedFrameBoundaryByte = GlobalAudioRingBuffer.PlayCursor + ExpectedBytesUntilFlip;
 	  
 	      /* NOTE(l4v): 
 		 SafeWriteCursor is the position of the write cursor on

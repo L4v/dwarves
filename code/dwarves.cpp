@@ -3,7 +3,7 @@
 internal void
 GameOutputSound(game_state* GameState, game_sound_output_buffer* SoundBuffer)
 {
-#if 0
+#if 1
   int16 ToneVolume = 3000;
   int32 WavePeriod = SoundBuffer->SamplesPerSec / GameState->ToneHz;
   
